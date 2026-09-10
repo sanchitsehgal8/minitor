@@ -29,6 +29,25 @@ npm run build      # prisma generate + next build
   the same code can run client-side and again server-side on write, and so the
   test suite can cover them without React.
 
+## Website Privacy Intelligence
+
+Scan logic lives in `src/lib/scan/` and is pure — no React, no fetch. Components
+in `src/components/privacy/` render it and own only view state. If you find
+yourself computing a score or classifying a domain inside a component, it
+belongs in the service instead.
+
+- **Determinism is a requirement, not a detail.** `scan-engine.ts` seeds a
+  Mulberry32 PRNG from the domain. Never introduce `Math.random()` or
+  `Date.now()` into report generation — score history compares scans, and a
+  wandering baseline makes it meaningless.
+- **`profileForDomain` must never map an unknown domain to `privacy-first`.**
+  Guessing a site is clean is the one wrong answer; unknown domains hash onto
+  the commercial archetypes.
+- **A site override re-derives the report** via `applySiteOverride` rather than
+  patching counts, so scores stay consistent with the decisions displayed.
+- **`ScanResult.dataSource` is required** and surfaced in the report header. See
+  the honesty invariant below — it applies to scans too.
+
 ## The honesty invariant
 
 Every privacy-console event carries `enforcement: 'blocked' | 'simulated'`, and
@@ -52,3 +71,9 @@ Checked against a running build, not assumed:
 - cross-origin frame unreadable from parent; `allow-top-navigation` absent
 - no horizontal scroll at 390px on the landing page or the shell
 - reduced-motion → hero renders its final state immediately
+- scan API: 401 unauthenticated, 422 on bad URL, 404 on unknown id
+- five profiles produce distinct reports (privacy 100/63/56/53/47 across archetypes)
+- private-mode scan → 202 `stored:false`, report returned, no DB row
+- site override 47 → 29, reset restores 47
+- table filters and search narrow rows; every filtered row matches the filter
+- existing tabs, nav, back/forward, bookmarks, history, panels, private mode all intact

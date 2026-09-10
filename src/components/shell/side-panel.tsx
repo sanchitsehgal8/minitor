@@ -1,11 +1,12 @@
 'use client';
 
-import { ClockIcon, ShieldIcon, StarIcon } from '@/components/ui/icons';
+import { ClockIcon, ScanIcon, ShieldIcon, StarIcon } from '@/components/ui/icons';
 
-export const PANELS = ['privacy', 'history', 'bookmarks', 'cookies'] as const;
+export const PANELS = ['analysis', 'privacy', 'history', 'bookmarks', 'cookies'] as const;
 export type PanelId = (typeof PANELS)[number];
 
 const LABELS: Record<PanelId, string> = {
+  analysis: 'Analyse',
   privacy: 'Privacy',
   history: 'History',
   bookmarks: 'Bookmarks',
@@ -37,7 +38,7 @@ export function PanelTabs({
             }`}
           >
             <PanelIcon panel={panel} />
-            <span className="hidden sm:inline">{LABELS[panel]}</span>
+            <span className="hidden lg:inline">{LABELS[panel]}</span>
           </button>
         );
       })}
@@ -47,6 +48,7 @@ export function PanelTabs({
 
 function PanelIcon({ panel }: { readonly panel: PanelId }) {
   const className = 'h-3.5 w-3.5';
+  if (panel === 'analysis') return <ScanIcon className={className} />;
   if (panel === 'privacy') return <ShieldIcon className={className} />;
   if (panel === 'history') return <ClockIcon className={className} />;
   if (panel === 'bookmarks') return <StarIcon className={className} />;

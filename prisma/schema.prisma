@@ -17,6 +17,7 @@ model User {
   createdAt    DateTime       @default(now())
   bookmarks    Bookmark[]
   history      HistoryEntry[]
+  scans        ScanRecord[]
 }
 
 model Bookmark {
@@ -41,4 +42,27 @@ model HistoryEntry {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, visitedAt])
+}
+
+// A stored website privacy scan.
+//
+// `payload` holds the full ScanResult as JSON. SQLite has no JSON column type,
+// so it is stored as text and parsed on read. Normalising requests and cookies
+// into their own tables would add several joins for data that is only ever read
+// back as one whole report.
+model ScanRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  domain        String
+  url           String
+  privacyScore  Int
+  securityScore Int
+  // Whether the user asked to keep re-scanning this site (spec section 15).
+  monitored     Boolean  @default(false)
+  payload       String
+  scannedAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scannedAt])
+  @@index([userId, domain])
 }

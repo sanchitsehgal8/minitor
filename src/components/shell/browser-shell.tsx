@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { AddressBar } from '@/components/shell/address-bar';
 import { BookmarksPanel } from '@/components/shell/bookmarks-panel';
@@ -10,16 +10,18 @@ import { CookiesPanel } from '@/components/shell/cookies-panel';
 import { HistoryPanel } from '@/components/shell/history-panel';
 import { PrivacyConsole } from '@/components/shell/privacy-console';
 import { PrivateModeBanner } from '@/components/shell/private-mode-banner';
+import { PrivacyCenter } from '@/components/privacy/privacy-center';
 import { PanelTabs, type PanelId } from '@/components/shell/side-panel';
 import { TabBar } from '@/components/shell/tab-bar';
 import { Viewport } from '@/components/shell/viewport';
-import { MaskIcon } from '@/components/ui/icons';
+import { MaskIcon, ShieldIcon } from '@/components/ui/icons';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { useBrowser } from '@/hooks/use-browser';
+import { domainFromInput } from '@/lib/scan/scan-engine';
 
 export function BrowserShell({ userEmail }: { readonly userEmail: string }) {
   const [isPrivate, setIsPrivate] = useState(false);
-  const [panel, setPanel] = useState<PanelId>('privacy');
+  const [panel, setPanel] = useState<PanelId>('analysis');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
   const browser = useBrowser(isPrivate);
@@ -43,6 +45,12 @@ export function BrowserShell({ userEmail }: { readonly userEmail: string }) {
   // Reflects the URL on display: an http interstitial must show the amber
   // unlocked padlock, not a reassuring green one.
   const isSecure = displayHref.startsWith('https://') || displayHref.startsWith('/');
+
+  // The active tab's domain, so Privacy Center can offer to analyse it directly.
+  const currentDomain = useMemo(
+    () => (currentHref && !currentHref.startsWith('/') ? (domainFromInput(currentHref) ?? '') : ''),
+    [currentHref],
+  );
 
   return (
     <div
@@ -76,6 +84,19 @@ export function BrowserShell({ userEmail }: { readonly userEmail: string }) {
             >
               <MaskIcon className="h-3.5 w-3.5" />
               Private mode {isPrivate ? 'on' : 'off'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPanel('analysis');
+                setIsPanelOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-md border border-verdigris-dim bg-verdigris-dim/15 px-2.5 py-1 font-body text-xs text-verdigris transition-colors duration-150 hover:bg-verdigris-dim/25"
+            >
+              <ShieldIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Privacy</span>
+              <span className="sm:sr-only">Open Privacy Center</span>
             </button>
 
             <button
@@ -138,9 +159,12 @@ export function BrowserShell({ userEmail }: { readonly userEmail: string }) {
         </main>
 
         {isPanelOpen ? (
-          <aside className="flex h-80 min-h-0 shrink-0 flex-col border-t border-ink-edge lg:h-auto lg:w-80 lg:border-t-0">
+          <aside className="flex h-80 min-h-0 shrink-0 flex-col border-t border-ink-edge lg:h-auto lg:w-[26rem] lg:border-t-0">
             <PanelTabs active={panel} onSelect={setPanel} />
             <div className="min-h-0 flex-1 overflow-hidden bg-ink-sunken">
+              {panel === 'analysis' ? (
+                <PrivacyCenter currentDomain={currentDomain} isPrivate={tab.isPrivate} />
+              ) : null}
               {panel === 'privacy' ? (
                 <PrivacyConsole
                   events={browser.events}

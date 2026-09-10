@@ -1,8 +1,12 @@
 # MiniTor — web demo
 
+Browse privately. Understand what happens behind the page.
+
 A privacy-focused browser experience, as a Next.js web app: a landing page, real
 accounts, and a working in-browser browser shell with tabs, history, bookmarks,
-private mode, HTTPS enforcement and a live privacy console.
+private mode, HTTPS enforcement, a live privacy console — and **Website Privacy
+Intelligence**, which analyses a site and reports the domains it contacts, what
+MiniTor's rules would block, and an explainable privacy score.
 
 ## What is real and what is not
 
@@ -19,6 +23,7 @@ landing page and inside the app itself.
 | Cookie visibility | **Partial** | First-party, JS-readable cookies only. Third-party cookies inside a cross-origin iframe are invisible to the parent by design |
 | Tracker / ad-domain blocking | **Simulated** on third-party pages, **real** on `/demo/tracker-heavy` | The demo page is served by MiniTor, so a `Content-Security-Policy` genuinely blocks every blocklisted origin — verified: 6/6 requests fail with `errorText: csp` |
 | HTTPS-only enforcement | **Real** | Pure URL-scheme inspection, works on any URL typed in |
+| Website privacy analysis | **Modelled** | Scan reports come from one of five site profiles, not live measurement — a page cannot inspect another origin's traffic. Every report says so in its header. The scoring, tracker matching and party classification that produce it are real code, shared with the browser shell |
 
 ## Running locally
 
@@ -37,7 +42,7 @@ Generate a real secret with `openssl rand -base64 32`.
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build (runs `prisma generate` first) |
-| `npm test` | Unit tests for the policy layer (44 tests) |
+| `npm test` | Unit tests for the policy and scan layers (87 tests) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run db:studio` | Browse the database |
@@ -66,9 +71,10 @@ Three layers, with the rules isolated in the middle one:
 
 - **Interface** — `src/components/`. Presentational React; holds no privacy
   rules of its own.
-- **Policy** — `src/lib/privacy/`, `src/lib/browser/`. Pure TypeScript, no DOM
-  and no network, which is why the same checks run in the browser and again on
-  the server for any write. This is the layer the test suite covers.
+- **Policy** — `src/lib/privacy/`, `src/lib/browser/`, `src/lib/scan/`. Pure
+  TypeScript, no DOM and no network, which is why the same checks run in the
+  browser and again on the server for any write. This is the layer the test
+  suite covers.
 - **Storage** — `src/lib/db/`, `prisma/`. A private tab never reaches it.
 
 ### Where the guarantees live
@@ -88,6 +94,38 @@ Three layers, with the rules isolated in the middle one:
 - **Navigation** — the shell keeps its own per-tab stack
   ([`navigation-stack.ts`](src/lib/browser/navigation-stack.ts)) because a
   parent page cannot observe navigation inside a cross-origin iframe.
+
+## Website Privacy Intelligence
+
+Open the Privacy Shield in the toolbar, or the **Analyse** panel, then either
+"Analyse this site" or type any URL. The report covers the privacy score and its
+four weighted factors, security observations with severities, a network request
+table with filters and search, a connections graph, tracker and cookie
+breakdowns, per-site controls, and comparison against another scan.
+
+Where the logic lives — all of it outside the components:
+
+| Module | Responsibility |
+|---|---|
+| [`types.ts`](src/lib/scan/types.ts) | `ScanResult`, `RequestRecord`, `TrackerFinding`, `CookieFinding`, `SecurityFinding`, `PrivacyScore` |
+| [`site-profiles.ts`](src/lib/scan/site-profiles.ts) | Five archetypes and the domain→profile mapping. The seam a real backend would replace |
+| [`scan-engine.ts`](src/lib/scan/scan-engine.ts) | Builds a report; classification reuses `TRACKER_BLOCKLIST` and `baseDomain` so "tracker" means one thing app-wide |
+| [`privacy-score.ts`](src/lib/scan/privacy-score.ts) | Four weighted categories, each carrying its own explanation |
+| [`security-score.ts`](src/lib/scan/security-score.ts) | Severity-weighted deductions, plus the disclaimer the UI must show |
+| [`comparison.ts`](src/lib/scan/comparison.ts) | Side-by-side rows, score deltas, newly seen trackers |
+
+Two properties the tests pin down:
+
+- **Deterministic.** The same URL always produces the same report (seeded PRNG,
+  never `Math.random()`), which is what makes score history meaningful rather
+  than noise.
+- **Never flattering by accident.** An unknown domain is never mapped to the
+  privacy-friendly profile, and a site-level override re-derives the whole
+  report through the engine, so allowing trackers visibly lowers the score
+  instead of leaving a stale number.
+
+Scans are stored per account in `ScanRecord`. Private tabs get the report but no
+stored row — refused by the API, the same way history and bookmarks are.
 
 ## Credits
 

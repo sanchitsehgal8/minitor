@@ -143,3 +143,21 @@ export function SearchIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+/** Magnifier over a shield: privacy analysis. */
+export function ScanIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M8 1.75 3.5 3.25v4c0 2.3 1.5 4.2 3.3 5.2"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M12.5 3.25 8 1.75v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="10.25" cy="9.25" r="3" stroke="currentColor" strokeWidth="1.4" />
+      <path d="m12.5 11.5 1.75 1.75" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}

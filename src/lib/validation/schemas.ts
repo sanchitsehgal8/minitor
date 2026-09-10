@@ -59,3 +59,21 @@ export const idParamSchema = z.object({ id: z.string().cuid('Unknown record.') }
 export type Credentials = z.infer<typeof credentialsSchema>;
 export type HistoryWrite = z.infer<typeof historyWriteSchema>;
 export type BookmarkWrite = z.infer<typeof bookmarkWriteSchema>;
+
+/**
+ * Scan requests. The URL is validated the same way a bookmark's is, and the
+ * private flag exists for the same reason: a private tab must not leave a
+ * stored scan behind, and the server is what enforces that.
+ */
+export const scanRequestSchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .min(1, 'Enter a website to analyse.')
+    .max(2048, 'That URL is too long.'),
+  isPrivate: z.boolean().optional().default(false),
+});
+
+export const monitorToggleSchema = z.object({ monitored: z.boolean() });
+
+export type ScanRequest = z.infer<typeof scanRequestSchema>;

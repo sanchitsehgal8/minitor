@@ -1,3 +1,5 @@
+import type { ScanResult } from '@/lib/scan/types';
+
 /**
  * Typed client for the app's own API. Components never call `fetch` directly,
  * so error shaping and the request contract live in exactly one place.
@@ -9,6 +11,9 @@ export type HistoryEntryDto = {
   readonly title: string;
   readonly visitedAt: string;
 };
+
+/** A stored scan: the full report plus its persistence-only fields. */
+export type StoredScan = ScanResult & { readonly monitored: boolean };
 
 export type BookmarkDto = {
   readonly id: string;
@@ -95,5 +100,36 @@ export const api = {
 
   deleteBookmark(id: string) {
     return request<{ deleted: string }>(`/api/bookmarks/${id}`, { method: 'DELETE' });
+  },
+
+  /**
+   * Runs a scan. The report comes back either way; `stored` says whether it was
+   * written to history, which is false for private tabs.
+   */
+  scanWebsite(url: string, isPrivate: boolean) {
+    return request<{ stored: boolean; reason?: string; scan: StoredScan }>('/api/scans', {
+      method: 'POST',
+      body: JSON.stringify({ url, isPrivate }),
+    });
+  },
+
+  listScans(domain?: string) {
+    const suffix = domain ? `?domain=${encodeURIComponent(domain)}` : '';
+    return request<{ scans: readonly StoredScan[] }>(`/api/scans${suffix}`);
+  },
+
+  setScanMonitoring(id: string, monitored: boolean) {
+    return request<{ id: string; monitored: boolean }>(`/api/scans/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ monitored }),
+    });
+  },
+
+  deleteScan(id: string) {
+    return request<{ deleted: string }>(`/api/scans/${id}`, { method: 'DELETE' });
+  },
+
+  clearScans() {
+    return request<{ deleted: number }>('/api/scans', { method: 'DELETE' });
   },
 };

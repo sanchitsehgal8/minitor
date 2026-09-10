@@ -33,12 +33,13 @@ export default function LandingPage() {
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div>
             <h1 className="font-display text-4xl leading-tight text-ink sm:text-5xl">
-              A browser that shows you what it blocks.
+              Browse privately. Understand what happens behind the page.
             </h1>
             <p className="mt-5 max-w-md text-lg text-ash-dim">
-              MiniTor is a privacy-focused browser experience. This is the web demo: real tabs, real
-              accounts, real HTTPS enforcement — and a privacy console that tells you plainly which
-              parts are genuine and which are a simulation.
+              MiniTor is a privacy-focused browser experience with website privacy analysis built
+              in: scan a site to see the domains it contacts, what would be blocked, and an
+              explainable privacy score. This is the web demo, and it tells you plainly which parts
+              are measured and which are modelled.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className="btn-primary">
@@ -96,8 +97,8 @@ export default function LandingPage() {
               <dd className="technical mt-1 text-2xl text-ink">{EMBEDDABLE_SITES.length}</dd>
             </div>
             <div>
-              <dt className="text-sm text-ash-dim">Objectives genuinely functional</dt>
-              <dd className="technical mt-1 text-2xl text-ink">4 of 5</dd>
+              <dt className="text-sm text-ash-dim">Site profiles in the scanner</dt>
+              <dd className="technical mt-1 text-2xl text-ink">5</dd>
             </div>
           </dl>
         </div>
@@ -136,9 +137,9 @@ export default function LandingPage() {
             <div className="flex flex-col justify-center rounded-lg border border-ink-edge bg-ink-raised p-8">
               <h2 className="font-display text-2xl text-parchment">Try the browser shell</h2>
               <p className="mt-3 text-base text-ash">
-                Create an account to get your own history and bookmarks. They persist across
-                sessions and devices — except anything you open in a private tab, which is never
-                written down.
+                Create an account to get your own history, bookmarks and website scans. They persist
+                across sessions and devices — except anything you open in a private tab, which is
+                never written down.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link href="/signup" className="btn-primary">
