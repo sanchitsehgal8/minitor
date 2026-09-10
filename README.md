@@ -42,7 +42,7 @@ Generate a real secret with `openssl rand -base64 32`.
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build (runs `prisma generate` first) |
-| `npm test` | Unit tests for the policy and scan layers (87 tests) |
+| `npm test` | Unit tests for the policy and scan layers (109 tests) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run db:studio` | Browse the database |
@@ -110,7 +110,8 @@ Where the logic lives — all of it outside the components:
 | [`types.ts`](src/lib/scan/types.ts) | `ScanResult`, `RequestRecord`, `TrackerFinding`, `CookieFinding`, `SecurityFinding`, `PrivacyScore` |
 | [`site-profiles.ts`](src/lib/scan/site-profiles.ts) | Five archetypes and the domain→profile mapping. The seam a real backend would replace |
 | [`scan-engine.ts`](src/lib/scan/scan-engine.ts) | Builds a report; classification reuses `TRACKER_BLOCKLIST` and `baseDomain` so "tracker" means one thing app-wide |
-| [`privacy-score.ts`](src/lib/scan/privacy-score.ts) | Four weighted categories, each carrying its own explanation |
+| [`privacy-score.ts`](src/lib/scan/privacy-score.ts) | Five weighted categories, each carrying its own explanation |
+| [`tracking-parameters.ts`](src/lib/scan/tracking-parameters.ts) | `utm_*`/`gclid` detection and stripping — identifiers that ride inside the URL rather than in a request |
 | [`security-score.ts`](src/lib/scan/security-score.ts) | Severity-weighted deductions, plus the disclaimer the UI must show |
 | [`comparison.ts`](src/lib/scan/comparison.ts) | Side-by-side rows, score deltas, newly seen trackers |
 

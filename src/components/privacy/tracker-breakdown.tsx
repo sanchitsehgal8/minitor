@@ -9,8 +9,18 @@ const CATEGORY_LABEL: Record<TrackerCategory, string> = {
   analytics: 'Analytics',
   advertising: 'Advertising',
   social: 'Social tracking',
-  fingerprinting: 'Fingerprinting',
+  // Spec §8's "Other" row. Named for what it actually is rather than left as a
+  // vague bucket — fingerprinting is the category outside the usual trio.
+  fingerprinting: 'Other — fingerprinting',
 };
+
+/** Fixed display order, so the breakdown does not reshuffle between scans. */
+const CATEGORY_ORDER: readonly TrackerCategory[] = [
+  'analytics',
+  'advertising',
+  'social',
+  'fingerprinting',
+];
 
 /**
  * Tracker findings, grouped by category (spec §8).
@@ -35,7 +45,9 @@ export function TrackerBreakdown({
         requests: existing.requests + tracker.requests,
       });
     }
-    return [...byCategory.entries()].sort((a, b) => b[1].requests - a[1].requests);
+    return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map(
+      (category) => [category, byCategory.get(category)!] as const,
+    );
   }, [trackers]);
 
   const maxRequests = Math.max(1, ...groups.map(([, value]) => value.requests));

@@ -51,6 +51,11 @@ export type SiteProfile = {
   readonly security: readonly SecuritySpec[];
   /** Resource mix used when generating first-party requests. */
   readonly resourceMix: readonly ResourceType[];
+  /**
+   * Tracking parameters this archetype tags its own URLs with (spec §4).
+   * Keys must exist in TRACKING_PARAMETERS or they will not be detected.
+   */
+  readonly urlParameters: readonly string[];
 };
 
 const HTTPS_PASS: SecuritySpec = {
@@ -146,6 +151,7 @@ export const SITE_PROFILES: Readonly<Record<ProfileId, SiteProfile>> = {
     ],
     security: [HTTPS_PASS, HSTS_PASS, CSP_PASS, SECURE_COOKIES_PASS],
     resourceMix: ['document', 'stylesheet', 'script', 'font', 'image'],
+    urlParameters: [],
   },
 
   commercial: {
@@ -165,6 +171,7 @@ export const SITE_PROFILES: Readonly<Record<ProfileId, SiteProfile>> = {
     ],
     security: [HTTPS_PASS, HSTS_PASS, CSP_WARN, THIRD_PARTY_WARN, SECURE_COOKIES_WARN],
     resourceMix: ['document', 'stylesheet', 'script', 'image', 'xhr', 'font'],
+    urlParameters: ['utm_source', 'utm_medium', 'utm_campaign'],
   },
 
   news: {
@@ -188,6 +195,7 @@ export const SITE_PROFILES: Readonly<Record<ProfileId, SiteProfile>> = {
     ],
     security: [HTTPS_PASS, HSTS_WARN, CSP_WARN, THIRD_PARTY_WARN, MIXED_CONTENT_WARN, SECURE_COOKIES_WARN],
     resourceMix: ['document', 'script', 'image', 'xhr', 'pixel', 'stylesheet', 'media'],
+    urlParameters: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'gclid', 'fbclid'],
   },
 
   ecommerce: {
@@ -209,6 +217,7 @@ export const SITE_PROFILES: Readonly<Record<ProfileId, SiteProfile>> = {
     ],
     security: [HTTPS_PASS, HSTS_PASS, CSP_WARN, THIRD_PARTY_WARN, SECURE_COOKIES_WARN],
     resourceMix: ['document', 'stylesheet', 'script', 'image', 'xhr', 'pixel'],
+    urlParameters: ['utm_source', 'utm_campaign', 'gclid', 'msclkid', 'irclickid'],
   },
 
   social: {
@@ -229,6 +238,7 @@ export const SITE_PROFILES: Readonly<Record<ProfileId, SiteProfile>> = {
     ],
     security: [HTTPS_PASS, HSTS_PASS, CSP_WARN, THIRD_PARTY_WARN, SECURE_COOKIES_WARN],
     resourceMix: ['document', 'script', 'image', 'xhr', 'pixel', 'stylesheet'],
+    urlParameters: ['utm_source', 'fbclid', 'igshid', 'ttclid', 'twclid'],
   },
 };
 

@@ -8,6 +8,7 @@
  */
 
 import type { TrackerCategory } from '@/lib/privacy/tracker-blocklist';
+import type { ParameterFinding } from '@/lib/scan/tracking-parameters';
 
 /**
  * Where a scan's numbers came from.
@@ -93,7 +94,12 @@ export type SecurityFinding = {
 
 /** One weighted component of the privacy score, with its own explanation. */
 export type ScoreCategory = {
-  readonly id: 'trackerExposure' | 'thirdPartyActivity' | 'advertising' | 'cookiePrivacy';
+  readonly id:
+    | 'trackerExposure'
+    | 'thirdPartyActivity'
+    | 'advertising'
+    | 'cookiePrivacy'
+    | 'trackingParameters';
   readonly label: string;
   readonly score: number;
   /** Relative weight in the overall score. All weights sum to 1. */
@@ -140,6 +146,8 @@ export type ScanResult = {
   readonly requests: readonly RequestRecord[];
   readonly trackers: readonly TrackerFinding[];
   readonly cookies: readonly CookieFinding[];
+  /** Tracking parameters found in the observed URLs (spec §4). */
+  readonly parameters: readonly ParameterFinding[];
 };
 
 /** A node in the connections graph (spec §7). */

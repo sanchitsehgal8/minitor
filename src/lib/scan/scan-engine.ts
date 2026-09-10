@@ -16,6 +16,7 @@ import { TRACKER_BLOCKLIST, type TrackerRule } from '@/lib/privacy/tracker-block
 import { calculatePrivacyScore } from '@/lib/scan/privacy-score';
 import { calculateSecurityScore } from '@/lib/scan/security-score';
 import { profileForDomain, type SiteProfile } from '@/lib/scan/site-profiles';
+import { findTrackingParameters } from '@/lib/scan/tracking-parameters';
 import type {
   ConnectionGraph,
   CookieFinding,
@@ -100,12 +101,20 @@ function buildFirstPartyRequests(
   const records: RequestRecord[] = [];
   const paths = ['/', '/app.css', '/main.js', '/vendor.js', '/logo.svg', '/hero.webp', '/api/config'];
 
+  // Campaign parameters ride on the landing URL, not on asset requests, which
+  // is where they appear in practice.
+  const query =
+    profile.urlParameters.length > 0
+      ? `?${profile.urlParameters.map((key, i) => `${key}=${demoParameterValue(key, i)}`).join('&')}`
+      : '';
+
   for (let index = 0; index < profile.firstPartyRequests; index += 1) {
     const resourceType =
       index === 0
         ? 'document'
         : (profile.resourceMix[index % profile.resourceMix.length] ?? 'script');
-    const path = index === 0 ? '/' : (paths[index % paths.length] ?? `/asset-${index}`);
+    const path =
+      index === 0 ? `/${query}` : (paths[index % paths.length] ?? `/asset-${index}`);
     // A profile's insecureShare drives how many subresources fall back to http;
     // the main document is always https so the scheme badge stays coherent.
     const secure = index === 0 ? true : random() >= profile.insecureShare;
@@ -285,11 +294,16 @@ export function buildScanResult(input: {
   const cookies = buildCookies(profile, domain);
   const totals = computeTotals(requests, trackers, cookies);
 
+  // Detected from the generated URLs rather than read off the profile, so the
+  // findings always agree with the request list the report displays.
+  const parameters = findTrackingParameters(requests.map((request) => request.url));
+
   const privacy = calculatePrivacyScore({
     totals,
     trackers,
     cookies,
     thirdPartyRequests: requests.filter((request) => !request.firstParty).length,
+    parameters,
   });
 
   const security = calculateSecurityScore(
@@ -317,7 +331,15 @@ export function buildScanResult(input: {
     requests,
     trackers,
     cookies,
+    parameters,
   };
+}
+
+/** Deterministic placeholder value for a demo tracking parameter. */
+function demoParameterValue(key: string, index: number): string {
+  if (key.startsWith('utm_')) return ['newsletter', 'email', 'spring-promo', 'sidebar'][index % 4]!;
+  // Click identifiers are opaque per-click strings; shape matters, not content.
+  return `demo${(index + 3) * 7919}`;
 }
 
 /** Collapses requests into graph nodes, one per domain (spec §7). */
@@ -348,6 +370,49 @@ export function buildConnectionGraph(scan: ScanResult): ConnectionGraph {
 }
 
 /**
+ * Re-derives a scan with every third-party tracker blocked, for the strict
+ * per-site control (spec §11). The inverse of `applySiteOverride`: it blocks
+ * third-party requests in a tracking category that a profile left allowed.
+ *
+ * Scores are recomputed rather than patched, so the report stays internally
+ * consistent with the decisions displayed.
+ */
+export function applyStrictThirdPartyBlocking(scan: ScanResult): ScanResult {
+  const TRACKING: ReadonlySet<RequestCategory> = new Set([
+    'analytics',
+    'advertising',
+    'social',
+    'fingerprinting',
+  ]);
+
+  const requests = scan.requests.map((request) =>
+    !request.firstParty && TRACKING.has(request.category)
+      ? {
+          ...request,
+          action: 'block' as const,
+          reason: 'Blocked by the site rule “block third-party trackers”',
+        }
+      : request,
+  );
+  const trackers = scan.trackers.map((tracker) => ({ ...tracker, action: 'block' as const }));
+  const totals = computeTotals(requests, trackers, scan.cookies);
+
+  return {
+    ...scan,
+    requests,
+    trackers,
+    totals,
+    privacy: calculatePrivacyScore({
+      totals,
+      trackers,
+      cookies: scan.cookies,
+      thirdPartyRequests: requests.filter((request) => !request.firstParty).length,
+      parameters: scan.parameters,
+    }),
+  };
+}
+
+/**
  * Re-derives a scan as if the site's trackers were allowed through, for the
  * per-site override (spec §11). Scores are recomputed rather than patched, so
  * the report stays internally consistent with the new decisions.
@@ -371,6 +436,9 @@ export function applySiteOverride(scan: ScanResult): ScanResult {
       trackers,
       cookies: scan.cookies,
       thirdPartyRequests: requests.filter((request) => !request.firstParty).length,
+      // An override allows blocked requests through; it does not remove the
+      // tracking parameters already present in the URLs.
+      parameters: scan.parameters,
     }),
   };
 }

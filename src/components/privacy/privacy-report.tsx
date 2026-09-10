@@ -11,8 +11,13 @@ import { RequestOverview, RequestTable } from '@/components/privacy/request-tabl
 import { ScoreHistory } from '@/components/privacy/score-history';
 import { SecurityFindingsCard } from '@/components/privacy/security-findings-card';
 import { SiteControls } from '@/components/privacy/site-controls';
+import { ParameterAnalysis } from '@/components/privacy/parameter-analysis';
 import { TrackerBreakdown } from '@/components/privacy/tracker-breakdown';
-import { applySiteOverride, buildConnectionGraph } from '@/lib/scan/scan-engine';
+import {
+  applySiteOverride,
+  applyStrictThirdPartyBlocking,
+  buildConnectionGraph,
+} from '@/lib/scan/scan-engine';
 import type { StoredScan } from '@/lib/client/api-client';
 
 type ReportTab = 'overview' | 'network' | 'trackers' | 'cookies' | 'security' | 'controls';
@@ -52,10 +57,16 @@ export function PrivacyReport({
   const [tab, setTab] = useState<ReportTab>('overview');
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [isOverridden, setIsOverridden] = useState(false);
+  const [blockThirdParty, setBlockThirdParty] = useState(false);
 
-  // The override re-derives the whole report through the engine, so scores stay
+  // Site rules re-derive the whole report through the engine, so scores stay
   // consistent with the decisions shown rather than being patched in place.
-  const active = useMemo(() => (isOverridden ? applySiteOverride(scan) : scan), [scan, isOverridden]);
+  // Strict blocking wins over a temporary allowance: the stricter rule should
+  // never be silently undone by the looser one.
+  const active = useMemo(() => {
+    if (blockThirdParty) return applyStrictThirdPartyBlocking(scan);
+    return isOverridden ? applySiteOverride(scan) : scan;
+  }, [scan, isOverridden, blockThirdParty]);
   const graph = useMemo(() => buildConnectionGraph(active), [active]);
 
   const selectedNode = useMemo(
@@ -157,6 +168,13 @@ export function PrivacyReport({
               <DomainDetail node={selectedNode} onClose={() => setSelectedDomain(null)} />
             ) : null}
             <TrackerBreakdown trackers={active.trackers} onSelectDomain={setSelectedDomain} />
+            <ParameterAnalysis
+              parameters={active.parameters}
+              sampleUrl={
+                active.requests.find((request) => request.url.includes('utm_') || request.url.includes('clid='))
+                  ?.url ?? null
+              }
+            />
           </>
         ) : null}
 
@@ -170,8 +188,13 @@ export function PrivacyReport({
               domain={active.domain}
               blockedCount={scan.totals.blockedRequests}
               isOverridden={isOverridden}
+              blockThirdPartyTrackers={blockThirdParty}
               onAllowTemporarily={() => setIsOverridden(true)}
-              onReset={() => setIsOverridden(false)}
+              onReset={() => {
+                setIsOverridden(false);
+                setBlockThirdParty(false);
+              }}
+              onToggleThirdPartyBlocking={setBlockThirdParty}
             />
             <MonitoringCard
               domain={active.domain}

@@ -12,13 +12,19 @@
 
 import type { PrivacyScore, ScanTotals, ScoreCategory, TrackerFinding } from '@/lib/scan/types';
 import type { CookieFinding } from '@/lib/scan/types';
+import type { ParameterFinding } from '@/lib/scan/tracking-parameters';
 
-/** Weights sum to 1. Tracker exposure dominates because it is the clearest signal. */
+/**
+ * Weights sum to 1. Tracker exposure dominates because it is the clearest
+ * signal; tracking parameters weigh least, since they leak an identifier but
+ * do not by themselves open a connection to a third party.
+ */
 const WEIGHTS = {
-  trackerExposure: 0.4,
-  thirdPartyActivity: 0.25,
-  advertising: 0.2,
-  cookiePrivacy: 0.15,
+  trackerExposure: 0.36,
+  thirdPartyActivity: 0.22,
+  advertising: 0.18,
+  cookiePrivacy: 0.14,
+  trackingParameters: 0.1,
 } as const;
 
 function clamp(value: number): number {
@@ -159,6 +165,41 @@ function scoreCookiePrivacy(cookies: readonly CookieFinding[]): ScoreCategory {
 }
 
 /**
+ * Tracking parameters in observed URLs. Distinct occurrences are what matter:
+ * one `utm_source` on many URLs is a single tagging scheme, whereas several
+ * different click identifiers means several parties can correlate the visit.
+ */
+function scoreTrackingParameters(parameters: readonly ParameterFinding[]): ScoreCategory {
+  if (parameters.length === 0) {
+    return {
+      id: 'trackingParameters',
+      label: 'Tracking parameters',
+      score: 100,
+      weight: WEIGHTS.trackingParameters,
+      explanation:
+        'No known campaign or click-identifier parameters were found in the URLs observed in this scan.',
+    };
+  }
+
+  const clickIds = parameters.filter((parameter) => parameter.category === 'click-id').length;
+  // Click identifiers are per-user; campaign tags are usually per-campaign, so
+  // they are penalised more heavily.
+  const penalty = parameters.length * 7 + clickIds * 8;
+
+  return {
+    id: 'trackingParameters',
+    label: 'Tracking parameters',
+    score: clamp(100 - penalty),
+    weight: WEIGHTS.trackingParameters,
+    explanation:
+      `${count(parameters.length, 'tracking parameter')} found in the observed URLs` +
+      (clickIds > 0
+        ? `, including ${count(clickIds, 'click identifier')} that can tie this visit to an individual click.`
+        : ', all campaign or email tags rather than per-click identifiers.'),
+  };
+}
+
+/**
  * Combines the categories into the overall score. The total is the weighted
  * mean of the parts, so the breakdown always adds up to what is displayed —
  * there is no separate headline number to disagree with it.
@@ -168,12 +209,14 @@ export function calculatePrivacyScore(input: {
   readonly trackers: readonly TrackerFinding[];
   readonly cookies: readonly CookieFinding[];
   readonly thirdPartyRequests: number;
+  readonly parameters?: readonly ParameterFinding[];
 }): PrivacyScore {
   const categories: readonly ScoreCategory[] = [
     scoreTrackerExposure(input.trackers),
     scoreThirdPartyActivity(input.totals, input.thirdPartyRequests),
     scoreAdvertising(input.totals),
     scoreCookiePrivacy(input.cookies),
+    scoreTrackingParameters(input.parameters ?? []),
   ];
 
   const total = categories.reduce((sum, category) => sum + category.score * category.weight, 0);

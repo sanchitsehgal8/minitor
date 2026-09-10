@@ -43,8 +43,11 @@ belongs in the service instead.
 - **`profileForDomain` must never map an unknown domain to `privacy-first`.**
   Guessing a site is clean is the one wrong answer; unknown domains hash onto
   the commercial archetypes.
-- **A site override re-derives the report** via `applySiteOverride` rather than
-  patching counts, so scores stay consistent with the decisions displayed.
+- **Site rules re-derive the report** via `applySiteOverride` /
+  `applyStrictThirdPartyBlocking` rather than patching counts, so scores stay
+  consistent with the decisions displayed. Strict blocking takes precedence
+  over a temporary allowance — the stricter rule must never be silently undone
+  by the looser one.
 - **`ScanResult.dataSource` is required** and surfaced in the report header. See
   the honesty invariant below — it applies to scans too.
 
@@ -74,6 +77,8 @@ Checked against a running build, not assumed:
 - scan API: 401 unauthenticated, 422 on bad URL, 404 on unknown id
 - five profiles produce distinct reports (privacy 100/63/56/53/47 across archetypes)
 - private-mode scan → 202 `stored:false`, report returned, no DB row
-- site override 47 → 29, reset restores 47
+- site override 46 → 30, strict blocking returns it to 46, reset restores baseline
+- five score categories, weights sum to exactly 1.0
+- tracking parameters detected from the generated URLs, not read off the profile
 - table filters and search narrow rows; every filtered row matches the filter
 - existing tabs, nav, back/forward, bookmarks, history, panels, private mode all intact
