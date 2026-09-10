@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-parchment font-body text-base text-ink antialiased;
+  }
+
+  /*
+   * Spec §7: focus must be visible throughout. Applied via :focus-visible on
+   * every focusable element rather than per-component, so a new control cannot
+   * ship without it.
+   */
+  :focus-visible {
+    outline: 2px solid theme('colors.verdigris.DEFAULT');
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  .on-ink :focus-visible {
+    outline-color: theme('colors.verdigris.DEFAULT');
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: theme('colors.verdigris.wash');
+    color: theme('colors.ink.DEFAULT');
+  }
+}
+
+@layer components {
+  /* Address bar and privacy log: monospace because real browsers render URLs
+     that way, not for decoration (spec §4). */
+  .technical {
+    @apply font-mono tracking-tight;
+    font-feature-settings: 'ss01', 'zero';
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-verdigris px-5 py-2.5
+           font-body text-sm font-medium text-white transition-colors duration-150
+           hover:bg-verdigris-dim active:bg-verdigris-dim disabled:cursor-not-allowed
+           disabled:bg-ash-light disabled:text-ash-dim;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-ash-light
+           bg-paper px-5 py-2.5 font-body text-sm font-medium text-ink transition-colors
+           duration-150 hover:border-ash hover:bg-parchment;
+  }
+
+  .field {
+    @apply w-full rounded-md border border-ash-light bg-white px-3 py-2.5 font-body text-base
+           text-ink placeholder:text-ash transition-colors duration-150
+           focus:border-verdigris focus:outline-none focus-visible:outline-2
+           focus-visible:outline-offset-2 focus-visible:outline-verdigris;
+  }
+
+  .chrome-button {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-ash-light
+           transition-colors duration-150 hover:bg-ink-edge hover:text-white
+           disabled:cursor-not-allowed disabled:text-ash-dim disabled:hover:bg-transparent;
+  }
+}
+
+/*
+ * Spec §7: prefers-reduced-motion respected globally. Framer Motion reads the
+ * same signal via MotionConfig, and this catches CSS transitions/animations —
+ * every animated element therefore has a static end state, not a missing one.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* The privacy console scrolls; keep its scrollbar in-palette on the dark chrome. */
+.log-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #252a35 transparent;
+}
+
+.log-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-scroll::-webkit-scrollbar-thumb {
+  background-color: #252a35;
+  border-radius: 9999px;
+}

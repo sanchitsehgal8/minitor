@@ -1,0 +1,44 @@
+// Local dev uses SQLite. Prisma requires the provider to be a literal, so
+// deploying to Postgres/Supabase means changing `provider` below to
+// "postgresql" and pointing DATABASE_URL at that database — see README.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  bookmarks    Bookmark[]
+  history      HistoryEntry[]
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  title     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One bookmark per URL per user; the UI toggles rather than duplicates.
+  @@unique([userId, url])
+  @@index([userId, createdAt])
+}
+
+model HistoryEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  title     String
+  visitedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, visitedAt])
+}
