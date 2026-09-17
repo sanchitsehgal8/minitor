@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ShieldIcon } from '@/components/ui/icons';
 import {
   ENFORCED_DISCLOSURE,
+  ENFORCEMENT_COPY,
   SIMULATION_DISCLOSURE,
   formatEventTime,
   type PrivacyEvent,
@@ -89,7 +90,7 @@ export function PrivacyConsole({
                           : 'bg-amber-dim/20 text-amber'
                       }`}
                     >
-                      {event.enforcement}
+                      {ENFORCEMENT_COPY[event.enforcement]}
                     </span>
                     <span className="text-xs text-ash-dim">
                       {event.category} · {event.operator}

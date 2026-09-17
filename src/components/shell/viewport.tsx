@@ -2,7 +2,7 @@
 
 import { EMBEDDABLE_SITES } from '@/lib/privacy/embeddable-sites';
 import { upgradeToHttps } from '@/lib/privacy/url';
-import type { TabView } from '@/lib/browser/tabs';
+import type { NavigateFn, TabView } from '@/lib/browser/tabs';
 import { ShieldIcon } from '@/components/ui/icons';
 
 export function Viewport({
@@ -14,7 +14,7 @@ export function Viewport({
   readonly view: TabView;
   readonly reloadToken: number;
   readonly isPrivate: boolean;
-  readonly onNavigate: (input: string) => void;
+  readonly onNavigate: NavigateFn;
 }) {
   switch (view.kind) {
     case 'start':
@@ -69,7 +69,7 @@ function StartPage({
   onNavigate,
 }: {
   readonly isPrivate: boolean;
-  readonly onNavigate: (input: string) => void;
+  readonly onNavigate: NavigateFn;
 }) {
   return (
     <div className="h-full overflow-y-auto bg-paper px-5 py-10 sm:px-10">
@@ -109,7 +109,7 @@ function InsecureInterstitial({
   onNavigate,
 }: {
   readonly href: string;
-  readonly onNavigate: (input: string) => void;
+  readonly onNavigate: NavigateFn;
 }) {
   const hostname = safeHostname(href);
 
@@ -141,7 +141,7 @@ function InsecureInterstitial({
           </button>
           <button
             type="button"
-            onClick={() => onNavigate(`${href}#minitor-allow-insecure`)}
+            onClick={() => onNavigate(href, { allowInsecure: true })}
             className="btn-secondary"
           >
             Load it anyway, unencrypted
@@ -161,7 +161,7 @@ function NotEmbeddable({
   onNavigate,
 }: {
   readonly href: string;
-  readonly onNavigate: (input: string) => void;
+  readonly onNavigate: NavigateFn;
 }) {
   const hostname = safeHostname(href);
 

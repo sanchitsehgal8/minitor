@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { TrashIcon } from '@/components/ui/icons';
+import { ErrorState } from '@/components/ui/panel-states';
 import { scoreBand } from '@/lib/scan/privacy-score';
 import type { StoredScan } from '@/lib/client/api-client';
 
@@ -31,12 +32,15 @@ export function ScanHistory({
   error,
   onOpen,
   onRemove,
+  onRetry,
 }: {
   readonly scans: readonly StoredScan[];
   readonly isLoading: boolean;
   readonly error: string | null;
   readonly onOpen: (scan: StoredScan) => void;
   readonly onRemove: (id: string) => void;
+  /** Lets a failed load be retried in place instead of needing a page reload. */
+  readonly onRetry: () => void;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -49,9 +53,7 @@ export function ScanHistory({
 
       <div className="log-scroll flex-1 overflow-y-auto px-2 py-2">
         {error ? (
-          <p role="alert" className="px-2 py-2 text-xs text-amber">
-            {error}
-          </p>
+          <ErrorState message={error} onRetry={onRetry} />
         ) : null}
 
         {isLoading && scans.length === 0 ? (

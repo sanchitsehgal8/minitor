@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { SearchIcon, TrashIcon } from '@/components/ui/icons';
+import { ErrorState } from '@/components/ui/panel-states';
 import { useHistory } from '@/hooks/use-history';
 import { formatForDisplay } from '@/lib/privacy/url';
 
@@ -13,7 +14,8 @@ export function HistoryPanel({
   readonly isActive: boolean;
   readonly onNavigate: (url: string) => void;
 }) {
-  const { entries, total, query, setQuery, isLoading, error, remove, clearAll } = useHistory(isActive);
+  const { entries, total, query, setQuery, isLoading, error, refresh, remove, clearAll } =
+    useHistory(isActive);
 
   return (
     <div className="flex h-full flex-col">
@@ -49,9 +51,7 @@ export function HistoryPanel({
 
       <div className="log-scroll flex-1 overflow-y-auto px-2 py-2">
         {error ? (
-          <p role="alert" className="px-2 py-2 text-xs text-amber">
-            {error}
-          </p>
+          <ErrorState message={error} onRetry={() => void refresh()} />
         ) : null}
 
         {isLoading && entries.length === 0 ? (

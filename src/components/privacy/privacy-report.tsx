@@ -18,6 +18,7 @@ import {
   applyStrictThirdPartyBlocking,
   buildConnectionGraph,
 } from '@/lib/scan/scan-engine';
+import { useRovingTablist } from '@/components/ui/tablist';
 import type { StoredScan } from '@/lib/client/api-client';
 
 type ReportTab = 'overview' | 'network' | 'trackers' | 'cookies' | 'security' | 'controls';
@@ -55,6 +56,14 @@ export function PrivacyReport({
   readonly onBack: () => void;
 }) {
   const [tab, setTab] = useState<ReportTab>('overview');
+  const { tabProps: reportTabProps } = useRovingTablist(
+    TABS.length,
+    TABS.findIndex((entry) => entry.id === tab),
+    (index) => {
+      const next = TABS[index];
+      if (next) setTab(next.id);
+    },
+  );
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [isOverridden, setIsOverridden] = useState(false);
   const [blockThirdParty, setBlockThirdParty] = useState(false);
@@ -113,12 +122,11 @@ export function PrivacyReport({
         ) : null}
 
         <div role="tablist" aria-label="Report sections" className="mt-3 flex flex-wrap gap-1">
-          {TABS.map((entry) => (
+          {TABS.map((entry, index) => (
             <button
               key={entry.id}
               type="button"
-              role="tab"
-              aria-selected={tab === entry.id}
+              {...reportTabProps(index, `report-tab-${entry.id}`, `report-panel-${entry.id}`)}
               onClick={() => setTab(entry.id)}
               className={`rounded-full border px-2.5 py-0.5 font-mono text-xs transition-colors duration-150 ${
                 tab === entry.id
@@ -132,7 +140,13 @@ export function PrivacyReport({
         </div>
       </header>
 
-      <div className="log-scroll flex-1 space-y-3 overflow-y-auto p-4">
+      <div
+        id={`report-panel-${tab}`}
+        role="tabpanel"
+        aria-labelledby={`report-tab-${tab}`}
+        tabIndex={0}
+        className="log-scroll flex-1 space-y-3 overflow-y-auto p-4"
+      >
         {tab === 'overview' ? (
           <>
             <PrivacyScoreCard score={active.privacy} />

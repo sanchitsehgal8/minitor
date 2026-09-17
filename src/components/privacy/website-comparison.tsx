@@ -25,7 +25,13 @@ function betterSide(row: ComparisonRow): 'left' | 'right' | null {
   return leftLeads ? 'left' : 'right';
 }
 
-export function WebsiteComparison({ scans }: { readonly scans: readonly StoredScan[] }) {
+export function WebsiteComparison({
+  scans,
+  isLoading = false,
+}: {
+  readonly scans: readonly StoredScan[];
+  readonly isLoading?: boolean;
+}) {
   const [leftId, setLeftId] = useState<string>('');
   const [rightId, setRightId] = useState<string>('');
 
@@ -36,6 +42,18 @@ export function WebsiteComparison({ scans }: { readonly scans: readonly StoredSc
     () => (left && right ? compareScans(left, right) : null),
     [left, right],
   );
+
+  // Distinguish "still loading" from "genuinely nothing": the empty copy counts
+  // saved scans, and rendering it mid-fetch told a user with ten stored scans
+  // that they had none.
+  if (isLoading && scans.length === 0) {
+    return (
+      <div className="p-4">
+        <h3 className="font-body text-sm font-medium text-parchment">Compare websites</h3>
+        <p className="mt-1.5 text-xs text-ash-dim">Loading your saved scans…</p>
+      </div>
+    );
+  }
 
   if (scans.length < 2) {
     return (
@@ -61,16 +79,27 @@ export function WebsiteComparison({ scans }: { readonly scans: readonly StoredSc
 
       {comparison ? (
         <>
-          <table className="mt-4 w-full border-collapse text-left">
+          {/* Own horizontal scroller: two long domains side by side otherwise
+              pushed the whole panel wider than a phone viewport. */}
+          <div className="log-scroll mt-4 overflow-x-auto">
+          <table className="w-full border-collapse text-left">
             <thead>
               <tr>
                 <th scope="col" className="pb-2 font-mono text-xs font-normal text-ash-dim">
                   Metric
                 </th>
-                <th scope="col" className="pb-2 font-mono text-xs font-normal text-ash-dim">
+                <th
+                  scope="col"
+                  className="max-w-[10rem] truncate pb-2 font-mono text-xs font-normal text-ash-dim"
+                  title={comparison.left.domain}
+                >
                   {comparison.left.domain}
                 </th>
-                <th scope="col" className="pb-2 font-mono text-xs font-normal text-ash-dim">
+                <th
+                  scope="col"
+                  className="max-w-[10rem] truncate pb-2 font-mono text-xs font-normal text-ash-dim"
+                  title={comparison.right.domain}
+                >
                   {comparison.right.domain}
                 </th>
               </tr>
@@ -96,6 +125,7 @@ export function WebsiteComparison({ scans }: { readonly scans: readonly StoredSc
               })}
             </tbody>
           </table>
+          </div>
 
           <p className="mt-3 rounded-md border border-ink-edge bg-ink px-3 py-2.5 text-xs leading-relaxed text-ash-light">
             {comparison.summary}

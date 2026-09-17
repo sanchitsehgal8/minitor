@@ -110,9 +110,78 @@ export function formatForDisplay(href: string): string {
   }
 }
 
-/** Registrable-ish domain, used for grouping history and matching blocklists. */
+/**
+ * Multi-label public suffixes.
+ *
+ * A naive "last two labels" rule is wrong for these: it reduces `bbc.co.uk` to
+ * `co.uk`, which would make every unrelated `.co.uk` site first-party with
+ * every other one — a privacy misclassification, not a cosmetic one, because
+ * first-party is exactly what the scan engine uses to decide whether a request
+ * counts as third-party tracking.
+ *
+ * This is a deliberately small list covering the suffixes the app's own
+ * profiles and blocklist actually use, not a vendored copy of the full Public
+ * Suffix List. A real deployment would depend on `psl`; the trade-off is noted
+ * in the README rather than hidden here.
+ */
+const MULTI_LABEL_SUFFIXES: ReadonlySet<string> = new Set([
+  'co.uk',
+  'org.uk',
+  'ac.uk',
+  'gov.uk',
+  'me.uk',
+  'net.uk',
+  'sch.uk',
+  'com.au',
+  'net.au',
+  'org.au',
+  'edu.au',
+  'gov.au',
+  'co.nz',
+  'net.nz',
+  'org.nz',
+  'co.za',
+  'co.jp',
+  'or.jp',
+  'ne.jp',
+  'ac.jp',
+  'co.in',
+  'net.in',
+  'org.in',
+  'ac.in',
+  'com.br',
+  'com.cn',
+  'com.mx',
+  'com.sg',
+  'com.tr',
+  'co.kr',
+  'com.hk',
+]);
+
+/** IPv4 literal, e.g. `192.168.1.1`. Dotted but not a domain. */
+const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/**
+ * Registrable domain, used for grouping history, matching blocklists and — most
+ * importantly — deciding first-vs-third party.
+ *
+ * IP literals and bracketed IPv6 hosts are returned whole: splitting
+ * `127.0.0.1` on dots and keeping the last two labels yields `0.1`, which would
+ * make every address ending in the same two octets look like the same party.
+ */
 export function baseDomain(hostname: string): string {
-  const parts = hostname.toLowerCase().split('.').filter(Boolean);
+  const host = hostname.toLowerCase().replace(/\.$/, '');
+
+  // An IPv6 literal keeps its brackets and contains colons, never dots that
+  // delimit labels; an IPv4 literal has no registrable domain either.
+  if (host.startsWith('[') || host.includes(':') || IPV4.test(host)) return host;
+
+  const parts = host.split('.').filter(Boolean);
   if (parts.length <= 2) return parts.join('.');
-  return parts.slice(-2).join('.');
+
+  // `bbc.co.uk` → last three labels; `www.example.com` → last two.
+  const lastTwo = parts.slice(-2).join('.');
+  return MULTI_LABEL_SUFFIXES.has(lastTwo)
+    ? parts.slice(-3).join('.')
+    : lastTwo;
 }

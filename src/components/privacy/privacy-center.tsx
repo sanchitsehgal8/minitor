@@ -7,9 +7,11 @@ import { ScanHistory } from '@/components/privacy/scan-history';
 import { ScanProgress } from '@/components/privacy/scan-progress';
 import { WebsiteComparison } from '@/components/privacy/website-comparison';
 import { ShieldIcon } from '@/components/ui/icons';
+import { useRovingTablist } from '@/components/ui/tablist';
 import { useScans } from '@/hooks/use-scans';
 
-type CenterView = 'scan' | 'history' | 'compare';
+const CENTER_VIEWS = ['scan', 'history', 'compare'] as const;
+type CenterView = (typeof CENTER_VIEWS)[number];
 
 /**
  * Privacy Center: the entry point for website privacy analysis (spec §1).
@@ -29,6 +31,12 @@ export function PrivacyCenter({
   const scans = useScans(isPrivate);
   const [view, setView] = useState<CenterView>('scan');
   const [manualUrl, setManualUrl] = useState('');
+
+  const centerIndex = CENTER_VIEWS.indexOf(view);
+  const { tabProps: centerTabProps } = useRovingTablist(CENTER_VIEWS.length, centerIndex, (index) => {
+    const next = CENTER_VIEWS[index];
+    if (next) setView(next);
+  });
 
   if (scans.phase.kind === 'scanning') {
     return <ScanProgress stageIndex={scans.phase.stageIndex} target={scans.phase.target} />;
@@ -51,12 +59,11 @@ export function PrivacyCenter({
   return (
     <div className="flex h-full flex-col">
       <div role="tablist" aria-label="Privacy Center sections" className="flex border-b border-ink-edge">
-        {(['scan', 'history', 'compare'] as const).map((entry) => (
+        {CENTER_VIEWS.map((entry, index) => (
           <button
             key={entry}
             type="button"
-            role="tab"
-            aria-selected={view === entry}
+            {...centerTabProps(index, `center-tab-${entry}`, `center-panel-${entry}`)}
             onClick={() => setView(entry)}
             className={`flex-1 border-b-2 px-2 py-2.5 font-body text-xs capitalize transition-colors duration-150 ${
               view === entry
@@ -69,7 +76,15 @@ export function PrivacyCenter({
         ))}
       </div>
 
-      <div className="log-scroll flex-1 overflow-y-auto">
+      {/* One panel node whose identity follows the active tab, so each tab's
+          aria-controls resolves without duplicating the scroll container. */}
+      <div
+        id={`center-panel-${view}`}
+        role="tabpanel"
+        aria-labelledby={`center-tab-${view}`}
+        tabIndex={0}
+        className="log-scroll flex-1 overflow-y-auto"
+      >
         {view === 'scan' ? (
           <div className="p-4">
             <h3 className="flex items-center gap-2 font-body text-sm font-medium text-parchment">
@@ -179,10 +194,13 @@ export function PrivacyCenter({
             error={scans.historyError}
             onOpen={scans.openStoredScan}
             onRemove={(id) => void scans.removeScan(id)}
+            onRetry={() => void scans.refreshHistory()}
           />
         ) : null}
 
-        {view === 'compare' ? <WebsiteComparison scans={scans.latestByDomain} /> : null}
+        {view === 'compare' ? (
+          <WebsiteComparison scans={scans.latestByDomain} isLoading={scans.isLoadingHistory} />
+        ) : null}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 /**
  * Explainable privacy score (spec §4).
  *
- * Four weighted categories, each a pure function of observed counts, each
+ * Five weighted categories, each a pure function of observed counts, each
  * carrying the sentence that explains its own number. Nothing here is
  * arbitrary: given the same totals you get the same score, and the report can
  * always answer "why".

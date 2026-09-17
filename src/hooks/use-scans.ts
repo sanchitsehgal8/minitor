@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, ApiError, type StoredScan } from '@/lib/client/api-client';
-import { SCAN_STAGES } from '@/lib/scan/scan-stages';
+import { SCAN_STAGES, TOTAL_SCAN_MS } from '@/lib/scan/scan-stages';
 import { domainFromInput } from '@/lib/scan/scan-engine';
 
 export type ScanPhase =
@@ -30,6 +30,23 @@ export function useScans(isPrivate: boolean) {
   // Cleared on unmount so a stage timer cannot fire into a dead component.
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  /**
+   * Monotonic token identifying the newest scan. A scan's async continuations
+   * check it before writing, so a slow earlier request cannot overwrite the
+   * results of a later one — the "scan B, see A's report" bug.
+   */
+  const runToken = useRef(0);
+  /** Same idea for history loads, which also overlap. */
+  const historyToken = useRef(0);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   const clearTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
@@ -38,15 +55,19 @@ export function useScans(isPrivate: boolean) {
   useEffect(() => clearTimers, [clearTimers]);
 
   const refreshHistory = useCallback(async () => {
+    const token = (historyToken.current += 1);
     setIsLoadingHistory(true);
     setHistoryError(null);
     try {
       const { scans } = await api.listScans();
+      // Ignore a response that a newer request has already superseded.
+      if (!mounted.current || token !== historyToken.current) return;
       setHistory(scans);
     } catch (cause) {
+      if (!mounted.current || token !== historyToken.current) return;
       setHistoryError(cause instanceof ApiError ? cause.message : 'Could not load your scans.');
     } finally {
-      setIsLoadingHistory(false);
+      if (mounted.current && token === historyToken.current) setIsLoadingHistory(false);
     }
   }, []);
 
@@ -65,6 +86,12 @@ export function useScans(isPrivate: boolean) {
         return;
       }
 
+      // Claim this run. Every continuation below re-checks the token, so
+      // starting a second scan makes the first one's late arrival a no-op
+      // rather than letting it overwrite the newer report.
+      const token = (runToken.current += 1);
+      const isCurrent = () => mounted.current && token === runToken.current;
+
       clearTimers();
       setPhase({ kind: 'scanning', stageIndex: 0, target });
 
@@ -74,6 +101,7 @@ export function useScans(isPrivate: boolean) {
         elapsed += stage.durationMs;
         timers.current.push(
           setTimeout(() => {
+            if (!isCurrent()) return;
             setPhase((current) =>
               current.kind === 'scanning'
                 ? { ...current, stageIndex: Math.min(index + 1, SCAN_STAGES.length - 1) }
@@ -83,22 +111,24 @@ export function useScans(isPrivate: boolean) {
         );
       });
 
-      const totalMs = SCAN_STAGES.reduce((sum, stage) => sum + stage.durationMs, 0);
       const startedAt = Date.now();
 
       try {
         const result = await api.scanWebsite(input, isPrivate);
+        if (!isCurrent()) return;
 
         // Let the stages finish even if the server answered sooner, so the
         // progress UI never truncates mid-way.
-        const remaining = Math.max(0, totalMs - (Date.now() - startedAt));
+        const remaining = Math.max(0, TOTAL_SCAN_MS - (Date.now() - startedAt));
         timers.current.push(
           setTimeout(() => {
+            if (!isCurrent()) return;
             setPhase({ kind: 'done', scan: result.scan, stored: result.stored });
             if (result.stored) void refreshHistory();
           }, remaining),
         );
       } catch (cause) {
+        if (!isCurrent()) return;
         clearTimers();
         setPhase({
           kind: 'error',
@@ -110,20 +140,34 @@ export function useScans(isPrivate: boolean) {
   );
 
   const reset = useCallback(() => {
+    // Bump the token as well: an in-flight scan must not resurrect a report
+    // after the user has deliberately left it.
+    runToken.current += 1;
     clearTimers();
     setPhase({ kind: 'idle' });
   }, [clearTimers]);
 
   /** Opens a stored scan without re-running it (spec §13). */
   const openStoredScan = useCallback((scan: StoredScan) => {
+    runToken.current += 1;
     clearTimers();
     setPhase({ kind: 'done', scan, stored: true });
   }, [clearTimers]);
 
+  /**
+   * Optimistic updates below snapshot inside the functional updater rather than
+   * from the render closure: a concurrent `refreshHistory` landing between
+   * render and failure would otherwise make the rollback restore a stale list,
+   * silently discarding newer server data. The callbacks also stay referentially
+   * stable, since they no longer depend on `history`.
+   */
   const toggleMonitoring = useCallback(
     async (id: string, monitored: boolean) => {
-      const snapshot = history;
-      setHistory((rows) => rows.map((row) => (row.id === id ? { ...row, monitored } : row)));
+      let snapshot: readonly StoredScan[] = [];
+      setHistory((rows) => {
+        snapshot = rows;
+        return rows.map((row) => (row.id === id ? { ...row, monitored } : row));
+      });
       setPhase((current) =>
         current.kind === 'done' && current.scan.id === id
           ? { ...current, scan: { ...current.scan, monitored } }
@@ -132,28 +176,33 @@ export function useScans(isPrivate: boolean) {
       try {
         await api.setScanMonitoring(id, monitored);
       } catch (cause) {
+        if (!mounted.current) return;
         setHistory(snapshot);
         setHistoryError(
           cause instanceof ApiError ? cause.message : 'Could not change monitoring for that site.',
         );
       }
     },
-    [history],
+    [],
   );
 
-  const removeScan = useCallback(
-    async (id: string) => {
-      const snapshot = history;
-      setHistory((rows) => rows.filter((row) => row.id !== id));
-      try {
-        await api.deleteScan(id);
-      } catch (cause) {
-        setHistory(snapshot);
-        setHistoryError(cause instanceof ApiError ? cause.message : 'Could not delete that scan.');
-      }
-    },
-    [history],
-  );
+  const removeScan = useCallback(async (id: string) => {
+    let snapshot: readonly StoredScan[] = [];
+    setHistory((rows) => {
+      snapshot = rows;
+      return rows.filter((row) => row.id !== id);
+    });
+    try {
+      await api.deleteScan(id);
+    } catch (cause) {
+      if (!mounted.current) return;
+      setHistory(snapshot);
+      setHistoryError(cause instanceof ApiError ? cause.message : 'Could not delete that scan.');
+    }
+  }, []);
+
+  /** Clears a surfaced list error so the user can retry without a reload. */
+  const dismissHistoryError = useCallback(() => setHistoryError(null), []);
 
   /** Most recent scan per domain, for the history list and comparison pickers. */
   const latestByDomain = useMemo(() => {
@@ -200,5 +249,6 @@ export function useScans(isPrivate: boolean) {
     toggleMonitoring,
     removeScan,
     refreshHistory,
+    dismissHistoryError,
   };
 }

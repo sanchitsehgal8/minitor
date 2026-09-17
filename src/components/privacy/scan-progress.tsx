@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 import { SCAN_STAGES } from '@/lib/scan/scan-stages';
 
@@ -18,15 +18,31 @@ export function ScanProgress({
   readonly target: string;
 }) {
   const progress = ((stageIndex + 1) / SCAN_STAGES.length) * 100;
+  const prefersReducedMotion = useReducedMotion();
+
+  const step = Math.min(stageIndex + 1, SCAN_STAGES.length);
+  const currentLabel = SCAN_STAGES[stageIndex]?.label ?? '';
 
   return (
-    <div className="px-4 py-5">
+    // A scan takes ~3.4s. Without a live region a screen-reader user got no
+    // indication it had started, progressed, or finished.
+    <div className="px-4 py-5" role="status" aria-live="polite">
       <p className="font-body text-sm font-medium text-parchment">Analysing {target}</p>
       <p className="technical mt-1 text-xs text-ash-dim">
-        Step {Math.min(stageIndex + 1, SCAN_STAGES.length)} of {SCAN_STAGES.length}
+        Step {step} of {SCAN_STAGES.length}
       </p>
+      <span className="sr-only">
+        {currentLabel}. Step {step} of {SCAN_STAGES.length}.
+      </span>
 
-      <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-ink-edge">
+      <div
+        className="mt-4 h-1 w-full overflow-hidden rounded-full bg-ink-edge"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={SCAN_STAGES.length}
+        aria-valuenow={step}
+        aria-valuetext={`${currentLabel}, step ${step} of ${SCAN_STAGES.length}`}
+      >
         <motion.div
           className="h-full bg-verdigris"
           animate={{ width: `${progress}%` }}
@@ -59,9 +75,12 @@ export function ScanProgress({
                 {stage.label}
               </span>
               {state === 'active' ? (
+                // framer's reducedMotion="user" still runs opacity animations,
+                // so the infinite pulse is gated explicitly rather than left to
+                // the provider.
                 <motion.span
                   className="h-1 w-1 rounded-full bg-verdigris"
-                  animate={{ opacity: [1, 0.25, 1] }}
+                  animate={prefersReducedMotion ? undefined : { opacity: [1, 0.25, 1] }}
                   transition={{ duration: 1.1, repeat: Infinity }}
                 />
               ) : null}

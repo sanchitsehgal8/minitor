@@ -62,7 +62,7 @@ export const OBJECTIVES: readonly Objective[] = [
     title: 'Website privacy analysis',
     status: 'partial',
     what:
-      'Analyse any site to see which domains it contacts, what MiniTor’s rules would block, an explainable privacy score with its four weighted factors, security observations, a cookie breakdown and a connections graph. Scans are saved per account, compared side by side, and tracked over time.',
+      'Analyse any site to see which domains it contacts, what MiniTor’s rules would block, an explainable privacy score with its five weighted factors, security observations, a cookie breakdown and a connections graph. Scans are saved per account, compared side by side, and tracked over time.',
     caveat:
       'The scan is generated from a site profile, not measured live — a web page cannot inspect another site’s network traffic. Every report says so in its header. The scoring, classification and blocklist matching that produce it are real code, and the same rules the browser applies.',
   },

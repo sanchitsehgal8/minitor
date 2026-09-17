@@ -4,16 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate --schema=database/schema.prisma && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "db:push": "prisma db push --schema=database/schema.prisma",
+    "db:generate": "prisma generate --schema=database/schema.prisma",
+    "db:seed": "vite-node --config vitest.config.ts database/seed.ts",
+    "db:setup": "prisma db push --schema=database/schema.prisma && vite-node --config vitest.config.ts database/seed.ts",
+    "db:studio": "prisma studio --schema=database/schema.prisma",
+    "postinstall": "prisma generate --schema=database/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

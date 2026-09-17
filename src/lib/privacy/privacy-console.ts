@@ -8,7 +8,13 @@
  * made inside a cross-origin iframe.
  */
 
-import { matchTracker, TRACKER_BLOCKLIST, type TrackerCategory, type TrackerRule } from './tracker-blocklist';
+import {
+  matchTracker,
+  ruleLabel,
+  TRACKER_BLOCKLIST,
+  type TrackerCategory,
+  type TrackerRule,
+} from './tracker-blocklist';
 import { isFirstPartyDemo } from './embeddable-sites';
 
 export type Enforcement =
@@ -76,7 +82,7 @@ export function createPrivacyEvent(
   sequence += 1;
   return {
     id: `${at}-${sequence}`,
-    domain: rule.domain,
+    domain: ruleLabel(rule),
     category: rule.category,
     operator: rule.operator,
     enforcement,

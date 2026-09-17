@@ -16,8 +16,6 @@ import { isKnownEmbeddable } from '@/lib/privacy/embeddable-sites';
 import { enforcementForPage, eventsForPageLoad, type PrivacyEvent } from '@/lib/privacy/privacy-console';
 import { parseAddressBarInput } from '@/lib/privacy/url';
 
-/** Explicit opt-in appended by the interstitial's "load it anyway" action. */
-const INSECURE_OVERRIDE = '#minitor-allow-insecure';
 const MAX_LOG_EVENTS = 120;
 
 /**
@@ -29,13 +27,27 @@ const MAX_LOG_EVENTS = 120;
  */
 export function useBrowser(isPrivate: boolean) {
   const [state, dispatch] = useReducer(browserReducer, undefined, createInitialState);
-  const [events, setEvents] = useState<readonly PrivacyEvent[]>([]);
+  /**
+   * Privacy-console events, keyed by tab.
+   *
+   * A single shared list was wrong on both counts that matter here: the console
+   * says "requests on this page", and its disclosure header says whether they
+   * were really blocked or only simulated. With one list, switching tabs kept
+   * the other tab's events on screen underneath the new tab's disclosure — so
+   * the honesty label could describe events it did not belong to.
+   */
+  const [eventsByTab, setEventsByTab] = useState<Readonly<Record<string, readonly PrivacyEvent[]>>>(
+    {},
+  );
 
   const tab = selectActiveTab(state);
 
-  const logPageLoad = useCallback((href: string) => {
+  const logPageLoad = useCallback((tabId: string, href: string) => {
     const fresh = eventsForPageLoad(href);
-    setEvents((existing) => [...fresh].reverse().concat(existing).slice(0, MAX_LOG_EVENTS));
+    setEventsByTab((existing) => ({
+      ...existing,
+      [tabId]: [...fresh].reverse().concat(existing[tabId] ?? []).slice(0, MAX_LOG_EVENTS),
+    }));
   }, []);
 
   /**
@@ -56,9 +68,14 @@ export function useBrowser(isPrivate: boolean) {
   );
 
   const navigate = useCallback(
-    (input: string) => {
+    (input: string, options?: { readonly allowInsecure?: boolean }) => {
       const tabId = state.activeTabId;
       const target = selectActiveTab(state);
+
+      // Submitting an empty address bar is a no-op, as in a real browser.
+      // Treating it as a failed navigation replaced the loaded page with a
+      // full-screen error and left no way back to it.
+      if (input.trim().length === 0) return;
 
       // Start page: an explicit reset, not a URL.
       if (input === '/') {
@@ -73,10 +90,15 @@ export function useBrowser(isPrivate: boolean) {
         return;
       }
 
-      const allowInsecure = input.endsWith(INSECURE_OVERRIDE);
-      const raw = allowInsecure ? input.slice(0, -INSECURE_OVERRIDE.length) : input;
+      /**
+       * The http opt-in is an explicit argument, not a magic `#fragment`
+       * appended to the URL. As a sentinel it was both forgeable — typing the
+       * fragment skipped the interstitial entirely — and lossy, since a real
+       * URL could legitimately end with it.
+       */
+      const allowInsecure = options?.allowInsecure ?? false;
 
-      const parsed = parseAddressBarInput(raw);
+      const parsed = parseAddressBarInput(input);
       if (!parsed.ok) {
         dispatch({
           type: 'set-view',
@@ -116,7 +138,7 @@ export function useBrowser(isPrivate: boolean) {
       function commit(committed: string) {
         const view: TabView = { kind: 'page', href: committed };
         dispatch({ type: 'set-view', id: tabId, view, recordHistory: true });
-        logPageLoad(committed);
+        logPageLoad(tabId, committed);
         void recordVisit(committed, titleFromHref(committed), target.isPrivate);
       }
     },
@@ -138,10 +160,18 @@ export function useBrowser(isPrivate: boolean) {
   const reload = useCallback(() => {
     const href = current(tab.stack);
     dispatch({ type: 'reload', id: tab.id });
-    if (href) logPageLoad(href);
+    if (href) logPageLoad(tab.id, href);
   }, [tab.id, tab.stack, logPageLoad]);
 
-  const clearLog = useCallback(() => setEvents([]), []);
+  /** Clears only the active tab's log — other tabs keep their own. */
+  const clearLog = useCallback(() => {
+    setEventsByTab((existing) => ({ ...existing, [state.activeTabId]: [] }));
+  }, [state.activeTabId]);
+
+  const events = useMemo(
+    () => eventsByTab[state.activeTabId] ?? [],
+    [eventsByTab, state.activeTabId],
+  );
 
   /**
    * The committed page for iframe/bookmark purposes: only a real page counts.

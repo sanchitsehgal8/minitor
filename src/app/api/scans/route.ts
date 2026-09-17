@@ -9,13 +9,39 @@ import type { ScanResult } from '@/lib/scan/types';
 
 const HISTORY_LIMIT = 100;
 
-/** Rows carry the report as JSON text; anything unparseable is skipped. */
+/**
+ * Rows carry the report as JSON text; anything unparseable is skipped.
+ *
+ * The shape is checked rather than cast. `ScanResult.dataSource` is required
+ * precisely so no report can render without declaring whether it was measured
+ * or modelled — but a blind `as ScanResult` let a row written by an older
+ * version through with `dataSource` undefined, which the report header then
+ * rendered as though it were a real measurement. Validating here keeps the
+ * type's guarantee true at the one place untyped data enters the system.
+ */
 function parseRow(row: { payload: string }): ScanResult | null {
+  let parsed: unknown;
   try {
-    return JSON.parse(row.payload) as ScanResult;
+    parsed = JSON.parse(row.payload);
   } catch {
     return null;
   }
+
+  if (typeof parsed !== 'object' || parsed === null) return null;
+  const candidate = parsed as Partial<ScanResult>;
+
+  const wellFormed =
+    typeof candidate.domain === 'string' &&
+    typeof candidate.url === 'string' &&
+    (candidate.dataSource === 'simulated-profile' ||
+      candidate.dataSource === 'measured-first-party') &&
+    typeof candidate.privacy?.total === 'number' &&
+    typeof candidate.security?.total === 'number' &&
+    Array.isArray(candidate.requests) &&
+    Array.isArray(candidate.trackers) &&
+    Array.isArray(candidate.cookies);
+
+  return wellFormed ? (candidate as ScanResult) : null;
 }
 
 export async function GET(request: NextRequest) {

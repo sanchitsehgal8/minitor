@@ -12,7 +12,7 @@
  */
 
 import { baseDomain } from '@/lib/privacy/url';
-import { TRACKER_BLOCKLIST, type TrackerRule } from '@/lib/privacy/tracker-blocklist';
+import { TRACKER_BLOCKLIST, ruleLabel, type TrackerRule } from '@/lib/privacy/tracker-blocklist';
 import { calculatePrivacyScore } from '@/lib/scan/privacy-score';
 import { calculateSecurityScore } from '@/lib/scan/security-score';
 import { profileForDomain, type SiteProfile } from '@/lib/scan/site-profiles';
@@ -181,11 +181,18 @@ function buildTrackerRequests(
     // Vary call counts so the breakdown is not a flat bar chart.
     const callCount = Math.max(1, profile.requestsPerTracker + (ruleIndex % 2 === 0 ? 0 : -1));
 
+    // Path-scoped rules (e.g. facebook.com/tr) must generate URLs under that
+    // path, or the request would not match the very rule that produced it.
+    const trackerPath = rule.pathPrefix ?? '/collect';
+    // Findings are keyed by the rule's label so `facebook.com/tr` stays
+    // distinguishable from the site itself, and still resolves via matchTracker.
+    const label = ruleLabel(rule);
+
     for (let call = 0; call < callCount; call += 1) {
       requests.push({
         id: `tr-${ruleIndex}-${call}`,
-        domain: rule.domain,
-        url: `https://${rule.domain}/collect?v=2&sid=${ruleIndex}${call}`,
+        domain: label,
+        url: `https://${rule.domain}${trackerPath}?v=2&sid=${ruleIndex}${call}`,
         resourceType: trackerResourceType(rule),
         firstParty: false,
         category: categoryFromRule(rule),
@@ -196,7 +203,7 @@ function buildTrackerRequests(
     }
 
     trackers.push({
-      domain: rule.domain,
+      domain: label,
       operator: rule.operator,
       category: rule.category,
       requests: callCount,
@@ -255,15 +262,32 @@ function computeTotals(
   };
 }
 
-/** Normalises input into a hostname, accepting bare hosts and full URLs. */
+/**
+ * Normalises input into a hostname, accepting bare hosts and full http(s) URLs.
+ *
+ * Any *other* scheme is rejected rather than coerced. Prefixing `https://` onto
+ * `ftp://example.com` would otherwise parse to the hostname `"ftp"` and happily
+ * produce a scan report for a site that does not exist — the address bar's
+ * `parseAddressBarInput` already refuses non-http(s) schemes, and this entry
+ * point has to agree with it.
+ */
 export function domainFromInput(input: string): string | null {
   const trimmed = input.trim();
   if (trimmed.length === 0) return null;
 
-  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  // A scheme is `name:` NOT followed by digits — `example.com:8443` is a bare
+  // host and a port, not a scheme, and must still be accepted.
+  const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:(?!\d)/.test(trimmed);
+  if (hasScheme && !/^https?:\/\//i.test(trimmed)) return null;
+
+  const candidate = hasScheme ? trimmed : `https://${trimmed}`;
   try {
     const { hostname } = new URL(candidate);
-    return hostname.length > 0 ? hostname.toLowerCase().replace(/^www\./, '') : null;
+    if (hostname.length === 0) return null;
+    // A leading dot ('.com') is not a host; `URL` accepts it but nothing else
+    // in the app treats it as one.
+    const host = hostname.toLowerCase().replace(/^www\./, '');
+    return host.startsWith('.') ? null : host;
   } catch {
     return null;
   }

@@ -83,6 +83,15 @@ export function activeTab(state: BrowserState): Tab {
   return found ?? state.tabs[0] ?? createTab(false);
 }
 
+/**
+ * The single navigation entry point's signature.
+ *
+ * `allowInsecure` is the user's explicit consent from the HTTPS interstitial.
+ * It is an argument rather than a sentinel appended to the URL so that consent
+ * cannot be forged by typing a magic fragment into the address bar.
+ */
+export type NavigateFn = (input: string, options?: { readonly allowInsecure?: boolean }) => void;
+
 export type BrowserAction =
   | { readonly type: 'open-tab'; readonly isPrivate: boolean }
   | { readonly type: 'close-tab'; readonly id: string }
@@ -119,13 +128,20 @@ export function browserReducer(state: BrowserState, action: BrowserAction): Brow
     }
 
     case 'close-tab': {
-      // Invariant: at least one tab stays open (spec §6).
-      if (state.tabs.length === 1) {
-        const replacement = createTab(activeTab(state).isPrivate);
-        return { tabs: [replacement], activeTabId: replacement.id };
-      }
+      // Resolve the target BEFORE the last-tab branch. Checking `length === 1`
+      // first would let a stale id — a double-click on a close button, or a
+      // click that lands after the tab already closed — replace whichever tab
+      // happened to be open, silently discarding its navigation stack.
       const index = state.tabs.findIndex((tab) => tab.id === action.id);
       if (index === -1) return state;
+
+      // Invariant: at least one tab stays open (spec §6). The replacement
+      // inherits the closed tab's mode, so closing the last private tab does
+      // not drop the user into a normal one.
+      if (state.tabs.length === 1) {
+        const replacement = createTab(state.tabs[0]!.isPrivate);
+        return { tabs: [replacement], activeTabId: replacement.id };
+      }
       const tabs = state.tabs.filter((tab) => tab.id !== action.id);
       const activeTabId =
         state.activeTabId === action.id

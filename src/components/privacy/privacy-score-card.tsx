@@ -27,7 +27,7 @@ export function PrivacyScoreCard({ score }: { readonly score: PrivacyScore }) {
       <ScoreDial score={score.total} label="Privacy score" />
 
       <p className="mt-3 text-xs leading-relaxed text-ash">
-        Weighted from the four factors below. Select one to see how it was calculated.
+        Weighted from the five factors below. Select one to see how it was calculated.
       </p>
 
       <ul className="mt-4 space-y-1">

@@ -11,10 +11,11 @@ import { HistoryPanel } from '@/components/shell/history-panel';
 import { PrivacyConsole } from '@/components/shell/privacy-console';
 import { PrivateModeBanner } from '@/components/shell/private-mode-banner';
 import { PrivacyCenter } from '@/components/privacy/privacy-center';
-import { PanelTabs, type PanelId } from '@/components/shell/side-panel';
+import { PanelTabs, panelBodyId, panelTabId, type PanelId } from '@/components/shell/side-panel';
 import { TabBar } from '@/components/shell/tab-bar';
 import { Viewport } from '@/components/shell/viewport';
 import { MaskIcon, ShieldIcon } from '@/components/ui/icons';
+import { TabPanel } from '@/components/ui/tablist';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { useBrowser } from '@/hooks/use-browser';
 import { domainFromInput } from '@/lib/scan/scan-engine';
@@ -122,7 +123,13 @@ export function BrowserShell({ userEmail }: { readonly userEmail: string }) {
           </div>
         </header>
 
-        {isPrivate ? <PrivateModeBanner /> : null}
+        {/*
+          Keyed off the tab actually on screen, not the toolbar toggle. The
+          banner promises "nothing here is written to your history"; showing it
+          while a non-private tab is in view would make that promise false for
+          the page the user is looking at.
+        */}
+        {tab.isPrivate ? <PrivateModeBanner /> : null}
       </div>
 
       <TabBar
@@ -162,23 +169,44 @@ export function BrowserShell({ userEmail }: { readonly userEmail: string }) {
           <aside className="flex h-80 min-h-0 shrink-0 flex-col border-t border-ink-edge lg:h-auto lg:w-[26rem] lg:border-t-0">
             <PanelTabs active={panel} onSelect={setPanel} />
             <div className="min-h-0 flex-1 overflow-hidden bg-ink-sunken">
-              {panel === 'analysis' ? (
+              {/*
+                Privacy Center stays mounted and is hidden instead of unmounted.
+                It owns the scan lifecycle, so unmounting it discarded an
+                in-progress scan and the open report on any stray panel click —
+                three seconds of work lost to a misclick. The other panels hold
+                only re-fetchable list state, so they unmount as before.
+              */}
+              <TabPanel
+                id={panelBodyId('analysis')}
+                labelledBy={panelTabId('analysis')}
+                className={panel === 'analysis' ? 'h-full' : 'hidden'}
+              >
                 <PrivacyCenter currentDomain={currentDomain} isPrivate={tab.isPrivate} />
-              ) : null}
+              </TabPanel>
               {panel === 'privacy' ? (
-                <PrivacyConsole
-                  events={browser.events}
-                  isEnforcedPage={browser.isEnforcedPage}
-                  onClear={browser.clearLog}
-                />
+                <TabPanel id={panelBodyId('privacy')} labelledBy={panelTabId('privacy')} className="h-full">
+                  <PrivacyConsole
+                    events={browser.events}
+                    isEnforcedPage={browser.isEnforcedPage}
+                    onClear={browser.clearLog}
+                  />
+                </TabPanel>
               ) : null}
               {panel === 'history' ? (
-                <HistoryPanel isActive onNavigate={browser.navigate} />
+                <TabPanel id={panelBodyId('history')} labelledBy={panelTabId('history')} className="h-full">
+                  <HistoryPanel isActive onNavigate={browser.navigate} />
+                </TabPanel>
               ) : null}
               {panel === 'bookmarks' ? (
-                <BookmarksPanel store={bookmarks} onNavigate={browser.navigate} />
+                <TabPanel id={panelBodyId('bookmarks')} labelledBy={panelTabId('bookmarks')} className="h-full">
+                  <BookmarksPanel store={bookmarks} onNavigate={browser.navigate} />
+                </TabPanel>
               ) : null}
-              {panel === 'cookies' ? <CookiesPanel isActive /> : null}
+              {panel === 'cookies' ? (
+                <TabPanel id={panelBodyId('cookies')} labelledBy={panelTabId('cookies')} className="h-full">
+                  <CookiesPanel isActive />
+                </TabPanel>
+              ) : null}
             </div>
           </aside>
         ) : null}

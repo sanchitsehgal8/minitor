@@ -1,9 +1,14 @@
 'use client';
 
 import { ClockIcon, ScanIcon, ShieldIcon, StarIcon } from '@/components/ui/icons';
+import { useRovingTablist } from '@/components/ui/tablist';
 
 export const PANELS = ['analysis', 'privacy', 'history', 'bookmarks', 'cookies'] as const;
 export type PanelId = (typeof PANELS)[number];
+
+/** Stable ids so each tab's `aria-controls` resolves to its panel. */
+export const panelTabId = (panel: PanelId) => `panel-tab-${panel}`;
+export const panelBodyId = (panel: PanelId) => `panel-body-${panel}`;
 
 const LABELS: Record<PanelId, string> = {
   analysis: 'Analyse',
@@ -20,16 +25,21 @@ export function PanelTabs({
   readonly active: PanelId;
   readonly onSelect: (panel: PanelId) => void;
 }) {
+  const activeIndex = PANELS.indexOf(active);
+  const { tabProps } = useRovingTablist(PANELS.length, activeIndex, (index) => {
+    const next = PANELS[index];
+    if (next) onSelect(next);
+  });
+
   return (
     <div role="tablist" aria-label="Side panels" className="flex border-b border-ink-edge bg-ink">
-      {PANELS.map((panel) => {
+      {PANELS.map((panel, index) => {
         const isActive = panel === active;
         return (
           <button
             key={panel}
             type="button"
-            role="tab"
-            aria-selected={isActive}
+            {...tabProps(index, panelTabId(panel), panelBodyId(panel))}
             onClick={() => onSelect(panel)}
             className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 font-body text-xs transition-colors duration-150 ${
               isActive

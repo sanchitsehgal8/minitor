@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { api, ApiError, type BookmarkDto } from '@/lib/client/api-client';
+import { useIsMounted, useLatestRequest } from '@/hooks/use-latest-request';
 
 export function useBookmarks(enabled: boolean) {
   const [bookmarks, setBookmarks] = useState<readonly BookmarkDto[]>([]);
@@ -10,18 +11,24 @@ export function useBookmarks(enabled: boolean) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const beginRequest = useLatestRequest();
+  const isMounted = useIsMounted();
+
   const refresh = useCallback(async () => {
+    const isCurrent = beginRequest();
     setIsLoading(true);
     setError(null);
     try {
       const { bookmarks: fetched } = await api.listBookmarks();
+      if (!isCurrent()) return;
       setBookmarks(fetched);
     } catch (cause) {
+      if (!isCurrent()) return;
       setError(cause instanceof ApiError ? cause.message : 'Could not load bookmarks.');
     } finally {
-      setIsLoading(false);
+      if (isCurrent()) setIsLoading(false);
     }
-  }, []);
+  }, [beginRequest]);
 
   useEffect(() => {
     if (enabled) void refresh();
@@ -38,39 +45,51 @@ export function useBookmarks(enabled: boolean) {
         }
         return { saved: result.saved };
       } catch (cause) {
-        setError(cause instanceof ApiError ? cause.message : 'Could not save that bookmark.');
+        if (isMounted()) {
+          setError(cause instanceof ApiError ? cause.message : 'Could not save that bookmark.');
+        }
         return { saved: false as const };
       }
     },
-    [],
+    [isMounted],
   );
 
+  // As in useHistory: snapshot inside the updater so a rollback cannot restore
+  // data that a concurrent refresh has already superseded.
   const remove = useCallback(
     async (id: string) => {
-      const snapshot = bookmarks;
-      setBookmarks((rows) => rows.filter((row) => row.id !== id));
+      let snapshot: readonly BookmarkDto[] = [];
+      setBookmarks((rows) => {
+        snapshot = rows;
+        return rows.filter((row) => row.id !== id);
+      });
       try {
         await api.deleteBookmark(id);
       } catch (cause) {
+        if (!isMounted()) return;
         setBookmarks(snapshot);
         setError(cause instanceof ApiError ? cause.message : 'Could not delete that bookmark.');
       }
     },
-    [bookmarks],
+    [isMounted],
   );
 
   const rename = useCallback(
     async (id: string, title: string) => {
-      const snapshot = bookmarks;
-      setBookmarks((rows) => rows.map((row) => (row.id === id ? { ...row, title } : row)));
+      let snapshot: readonly BookmarkDto[] = [];
+      setBookmarks((rows) => {
+        snapshot = rows;
+        return rows.map((row) => (row.id === id ? { ...row, title } : row));
+      });
       try {
         await api.renameBookmark(id, title);
       } catch (cause) {
+        if (!isMounted()) return;
         setBookmarks(snapshot);
         setError(cause instanceof ApiError ? cause.message : 'Could not rename that bookmark.');
       }
     },
-    [bookmarks],
+    [isMounted],
   );
 
   const visible = useMemo(() => {

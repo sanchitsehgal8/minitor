@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 
 import { SearchIcon, TrashIcon } from '@/components/ui/icons';
+import { ErrorState } from '@/components/ui/panel-states';
 import type { useBookmarks } from '@/hooks/use-bookmarks';
 import { formatForDisplay } from '@/lib/privacy/url';
 
@@ -56,9 +57,7 @@ export function BookmarksPanel({
 
       <div className="log-scroll flex-1 overflow-y-auto px-2 py-2">
         {error ? (
-          <p role="alert" className="px-2 py-2 text-xs text-amber">
-            {error}
-          </p>
+          <ErrorState message={error} onRetry={() => void store.refresh()} />
         ) : null}
 
         {isLoading && bookmarks.length === 0 ? (

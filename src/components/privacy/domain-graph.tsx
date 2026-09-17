@@ -82,10 +82,16 @@ export function DomainGraph({
       </p>
 
       <div className="log-scroll mt-3 overflow-x-auto">
+        {/*
+          `role="group"`, not `role="img"`: an image role collapses the whole
+          subtree into one opaque label, which hid every focusable node button
+          inside from assistive technology. The list below the graph carries the
+          same data as text, so nothing is graph-only.
+        */}
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="h-auto w-full min-w-[420px]"
-          role="img"
+          role="group"
           aria-label={`Connection graph for ${graph.root}, ${nodes.length} third-party domains shown`}
         >
           {positioned.map(({ node, x, y }) => (
