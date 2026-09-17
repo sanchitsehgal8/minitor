@@ -14,6 +14,7 @@ import {
 } from '@/lib/browser/tabs';
 import { isKnownEmbeddable } from '@/lib/privacy/embeddable-sites';
 import { enforcementForPage, eventsForPageLoad, type PrivacyEvent } from '@/lib/privacy/privacy-console';
+import { DEFAULT_ENGINE_ID } from '@/lib/privacy/search';
 import { parseAddressBarInput } from '@/lib/privacy/url';
 
 const MAX_LOG_EVENTS = 120;
@@ -25,7 +26,7 @@ const MAX_LOG_EVENTS = 120;
  * runs the same scheme check, the same embeddability check, and the same
  * private-mode branch, so no call site can skip one.
  */
-export function useBrowser(isPrivate: boolean) {
+export function useBrowser(isPrivate: boolean, searchEngineId: string = DEFAULT_ENGINE_ID) {
   const [state, dispatch] = useReducer(browserReducer, undefined, createInitialState);
   /**
    * Privacy-console events, keyed by tab.
@@ -98,7 +99,7 @@ export function useBrowser(isPrivate: boolean) {
        */
       const allowInsecure = options?.allowInsecure ?? false;
 
-      const parsed = parseAddressBarInput(input);
+      const parsed = parseAddressBarInput(input, searchEngineId);
       if (!parsed.ok) {
         dispatch({
           type: 'set-view',
@@ -142,7 +143,7 @@ export function useBrowser(isPrivate: boolean) {
         void recordVisit(committed, titleFromHref(committed), target.isPrivate);
       }
     },
-    [state, logPageLoad, recordVisit],
+    [state, logPageLoad, recordVisit, searchEngineId],
   );
 
   const openTab = useCallback(() => dispatch({ type: 'open-tab', isPrivate }), [isPrivate]);

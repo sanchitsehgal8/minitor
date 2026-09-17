@@ -1,6 +1,15 @@
 'use client';
 
+import { useState } from 'react';
+
 import { EMBEDDABLE_SITES } from '@/lib/privacy/embeddable-sites';
+import {
+  DEFAULT_ENGINE_ID,
+  EMBEDDABLE_ENGINES,
+  engineById,
+  queryFromSearchUrl,
+  searchUrl,
+} from '@/lib/privacy/search';
 import { upgradeToHttps } from '@/lib/privacy/url';
 import type { NavigateFn, TabView } from '@/lib/browser/tabs';
 import { ShieldIcon } from '@/components/ui/icons';
@@ -64,6 +73,67 @@ export function Viewport({
   }
 }
 
+/**
+ * Search from the start page.
+ *
+ * Search previously existed only as an address-bar fallback that routed to
+ * DuckDuckGo — which refuses framing, so every search dead-ended on the
+ * "refuses to be embedded" screen. Surfacing it here, with the engine named,
+ * makes the constraint visible instead of surprising.
+ */
+function StartSearch({ onNavigate }: { readonly onNavigate: NavigateFn }) {
+  const [engineId, setEngineId] = useState(DEFAULT_ENGINE_ID);
+  const [query, setQuery] = useState('');
+  const engine = engineById(engineId);
+
+  return (
+    <form
+      className="mt-6 max-w-xl"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const trimmed = query.trim();
+        if (trimmed.length > 0) onNavigate(searchUrl(trimmed, engineId));
+      }}
+    >
+      <label htmlFor="start-search" className="sr-only">
+        Search the web
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <input
+          id="start-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search the web"
+          className="min-w-0 flex-1 rounded-md border border-ash-light bg-white px-3 py-2 font-body text-base text-ink outline-none transition-colors duration-150 placeholder:text-ash focus:border-verdigris"
+        />
+        <button type="submit" className="btn-primary shrink-0">
+          Search
+        </button>
+      </div>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <label htmlFor="start-engine" className="font-body text-xs text-ash-dim">
+          Engine
+        </label>
+        <select
+          id="start-engine"
+          value={engineId}
+          onChange={(event) => setEngineId(event.target.value)}
+          className="rounded-md border border-ash-light bg-white px-2 py-1 font-body text-xs text-ink outline-none focus:border-verdigris"
+        >
+          {EMBEDDABLE_ENGINES.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-ash-dim">{engine.blurb}</span>
+      </div>
+    </form>
+  );
+}
+
 function StartPage({
   isPrivate,
   onNavigate,
@@ -78,9 +148,11 @@ function StartPage({
           {isPrivate ? 'Private tab' : 'Where to?'}
         </h1>
         <p className="mt-2 max-w-xl text-base text-ash-dim">
-          Type any URL in the address bar — HTTPS enforcement works on all of them. Pages only
-          render if the site permits being embedded, so here are ones that do.
+          Search below, or type any URL in the address bar — HTTPS enforcement works on all of
+          them. Pages only render if the site permits being embedded, so here are ones that do.
         </p>
+
+        <StartSearch onNavigate={onNavigate} />
 
         <ul className="mt-8 grid gap-2 sm:grid-cols-2">
           {EMBEDDABLE_SITES.map((site) => (
@@ -164,11 +236,16 @@ function NotEmbeddable({
   readonly onNavigate: NavigateFn;
 }) {
   const hostname = safeHostname(href);
+  // If the refusal came from a search, the useful recovery is that same query
+  // on an engine that does frame — not "go back and retype it".
+  const query = queryFromSearchUrl(href);
 
   return (
     <div className="flex h-full items-start justify-center overflow-y-auto bg-paper px-5 py-12">
       <div className="w-full max-w-lg rounded-lg border border-ash-light bg-white p-6">
-        <h1 className="font-display text-2xl text-ink">{hostname} refuses to be embedded</h1>
+        <h1 className="font-display text-2xl text-ink">
+          {query ? `${hostname} cannot show search results here` : `${hostname} refuses to be embedded`}
+        </h1>
 
         <p className="mt-3 text-base text-ink">
           This is not a MiniTor error. {hostname} sends a header —{' '}
@@ -188,6 +265,26 @@ function NotEmbeddable({
         <p className="technical mt-4 break-all rounded-md border border-ash-light bg-paper px-3 py-2 text-sm text-ink">
           {href}
         </p>
+
+        {query ? (
+          <div className="mt-6 rounded-md border border-verdigris/40 bg-verdigris-wash px-4 py-3.5">
+            <p className="font-body text-sm font-medium text-ink">
+              Search “{query}” on an engine that works here
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {EMBEDDABLE_ENGINES.map((engine) => (
+                <button
+                  key={engine.id}
+                  type="button"
+                  onClick={() => onNavigate(searchUrl(query, engine.id))}
+                  className="rounded-md border border-verdigris-dim/50 bg-white px-3 py-1.5 font-body text-sm text-verdigris-dim transition-colors duration-150 hover:border-verdigris hover:text-verdigris"
+                >
+                  {engine.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-6 flex flex-wrap gap-3">
           <a href={href} target="_blank" rel="noreferrer noopener" className="btn-secondary">

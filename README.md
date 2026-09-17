@@ -51,6 +51,7 @@ landing page, in the API types, and inside the app itself.
 | Capability | Status | Notes |
 |---|---|---|
 | Tabbed navigation, back/forward/reload | **Real** | Own per-tab navigation stack; pages load in an iframe, so browsing is limited to a curated list of sites that permit framing |
+| Address-bar search | **Real** | Defaults to Marginalia, one of the few engines that permits framing. Verified by loading each candidate in a real iframe — see below |
 | History and bookmarks per account | **Real** | Prisma-backed, survives refresh, logout, and login elsewhere |
 | Private mode | **Real** | Writes nothing; refused server-side, not merely hidden client-side |
 | HTTPS-only enforcement | **Real** | Pure URL-scheme inspection, works on any URL typed in |
@@ -76,7 +77,7 @@ This distinction is carried in the type system, not just in copy:
 | `npm run dev` | Development server |
 | `npm run build` | Production build (generates the Prisma client first) |
 | `npm start` | Serve the production build |
-| `npm test` | Unit tests for the policy, scan and validation layers (154 tests) |
+| `npm test` | Unit tests for the policy, scan and validation layers (168 tests) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run db:setup` | Create the database and seed the demo account |
@@ -124,11 +125,11 @@ src/
   lib/
     auth/              session, password hashing
     browser/           tab reducer, navigation stack
-    privacy/           URL rules, tracker blocklist, console events
+    privacy/           URL rules, search engines, tracker blocklist, console events
     scan/              scan engine, scoring, profiles, comparison
     validation/        Zod schemas shared by client and server
 database/              Prisma schema + seed script
-tests/                 unit tests (154)
+tests/                 unit tests (168)
 ```
 
 ### Where the guarantees live
@@ -200,7 +201,7 @@ stored row — refused by the API, the same way history and bookmarks are.
 npm test
 ```
 
-154 unit tests across the policy, scan, scoring and validation layers. They
+168 unit tests across the policy, scan, scoring and validation layers. They
 cover the properties that carry product meaning rather than restating the
 implementation:
 
@@ -274,6 +275,14 @@ These are deliberate, and stated rather than hidden:
 - **Browsing is limited to sites that allow framing.** Most large sites send
   `X-Frame-Options`, and the shell explains this rather than showing a blank
   frame.
+- **Search cannot use a mainstream engine.** DuckDuckGo, Startpage, Brave and
+  Mojeek all refuse framing, so results would never render. The default is
+  Marginalia, with Wiby and Wikipedia offered alongside it — each verified by
+  loading it in a real iframe rather than by trusting its headers, since the
+  `lite.` and `html.` DuckDuckGo endpoints advertise no framing headers and
+  still refuse. Searching a DuckDuckGo URL directly still works, but opens in a
+  real browser tab; the refusal screen offers the same query on an engine that
+  does render.
 - **Monitoring marks a site for tracking; it does not run background jobs.**
   There is no scheduler — the flag is honest about being a list, and re-scans
   happen when you open the site.

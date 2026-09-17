@@ -101,6 +101,18 @@ export const EMBEDDABLE_SITES: readonly EmbeddableSite[] = [
     blurb: 'RFC 9110 — HTTP semantics.',
   },
   {
+    title: 'Marginalia Search',
+    url: 'https://marginalia-search.com/search?query=onion+routing',
+    hostname: 'marginalia-search.com',
+    blurb: 'The default search engine — one of the few that permits framing.',
+  },
+  {
+    title: 'Wiby',
+    url: 'https://wiby.me/?q=onion+routing',
+    hostname: 'wiby.me',
+    blurb: 'Search engine for small, hand-made pages.',
+  },
+  {
     title: 'MiniTor demo page',
     url: '/demo/tracker-heavy',
     hostname: 'minitor.local',

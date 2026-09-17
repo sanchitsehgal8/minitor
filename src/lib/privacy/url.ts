@@ -7,6 +7,8 @@
  * same rules run in the browser and again server-side on write.
  */
 
+import { searchUrl } from './search';
+
 export type UrlScheme = 'https' | 'http' | 'unsupported';
 
 export type ParsedTarget = {
@@ -22,11 +24,11 @@ export type ParseResult =
   | { readonly ok: true; readonly target: ParsedTarget }
   | { readonly ok: false; readonly reason: string };
 
-const SEARCH_ENGINE = 'https://duckduckgo.com/?q=';
-
 /**
  * Anything with a dot and no whitespace is treated as a host, matching how
- * real address bars disambiguate a URL from a search query.
+ * real address bars disambiguate a URL from a search query. Anything else
+ * becomes a search — the engine lives in `search.ts`, because which engine is
+ * usable here is a framing constraint rather than a URL-parsing detail.
  */
 function looksLikeHost(input: string): boolean {
   return /^[^\s/]+\.[^\s/]{2,}/.test(input);
@@ -46,7 +48,7 @@ function toScheme(protocol: string): UrlScheme {
  * silently upgraded, because the interstitial (spec §6) has to be able to tell
  * the user what they actually requested.
  */
-export function parseAddressBarInput(raw: string): ParseResult {
+export function parseAddressBarInput(raw: string, engineId?: string): ParseResult {
   const input = raw.trim();
   if (input.length === 0) return { ok: false, reason: 'Enter a URL to navigate.' };
 
@@ -59,7 +61,7 @@ export function parseAddressBarInput(raw: string): ParseResult {
     candidate = `https://${input}`;
   } else {
     // Not a host: treat as a search query.
-    candidate = `${SEARCH_ENGINE}${encodeURIComponent(input)}`;
+    candidate = searchUrl(input, engineId);
   }
 
   let url: URL;
