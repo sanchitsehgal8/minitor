@@ -1,4 +1,3 @@
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import type { TrackerRule } from '@/lib/privacy/tracker-blocklist';
 
 /**
@@ -22,7 +21,7 @@ export function TrackerMarquee({
         {stats.map((stat) => (
           <div key={stat.label} className="px-3 py-3 first:pl-0 sm:px-8">
             <p className="font-display text-4xl text-white sm:text-5xl">
-              <AnimatedNumber value={stat.value} />
+              {stat.value}
             </p>
             <p className="mt-2 text-xs text-ash sm:text-sm">{stat.label}</p>
           </div>

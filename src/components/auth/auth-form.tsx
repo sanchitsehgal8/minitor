@@ -114,11 +114,7 @@ export function AuthForm({ mode }: { readonly mode: Mode }) {
   const isLongEnough = password.length >= MIN_PASSWORD;
 
   return (
-    <main className="grain relative isolate grid min-h-screen overflow-hidden bg-void lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -left-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-verdigris/15 blur-[120px]" />
-        <div className="bg-grid mask-radial absolute inset-0 opacity-40" />
-      </div>
+    <main className="relative isolate grid min-h-screen overflow-hidden bg-void lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
 
       {/* Form column */}
       <div className="flex min-h-screen flex-col px-5 py-5 sm:px-10">
@@ -137,8 +133,7 @@ export function AuthForm({ mode }: { readonly mode: Mode }) {
             transition={{ duration: 0.8, ease: EASE }}
             className="w-full max-w-sm"
           >
-            <p className="eyebrow">{mode === 'login' ? 'Welcome back' : 'Get started'}</p>
-            <h1 className="mt-3 font-display text-5xl text-white">{copy.title}</h1>
+            <h1 className="font-display text-5xl text-white">{copy.title}</h1>
             <p className="mt-3 text-base text-ash-light">{copy.blurb}</p>
 
             <form onSubmit={handleSubmit} className="mt-10 space-y-5" noValidate>
@@ -260,26 +255,21 @@ export function AuthForm({ mode }: { readonly mode: Mode }) {
       {/* Visual column: the same network as the landing page, plus what an account gets you. */}
       <aside className="relative hidden overflow-hidden border-l border-white/[0.06] bg-ink-sunken/60 lg:flex lg:flex-col lg:justify-end">
         <div aria-hidden="true" className="absolute inset-0">
-          <div className="absolute inset-[25%] rounded-full bg-verdigris/20 blur-[90px]" />
+          <div className="absolute inset-[30%] rounded-full bg-verdigris/15 blur-[90px]" />
           <div className="absolute inset-x-0 top-[6%] mx-auto aspect-square w-[min(90%,40rem)]">
             <NetworkGlobe />
           </div>
         </div>
         <div className="relative bg-gradient-to-t from-void via-void/80 to-transparent px-12 pb-12 pt-32">
-          <ul className="space-y-3">
-            {PROMISES.map((promise, index) => (
-              <motion.li
+          <ul className="border-t border-white/[0.08]">
+            {PROMISES.map((promise) => (
+              <li
                 key={promise.text}
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 + index * 0.1, ease: EASE }}
-                className="glass flex items-center gap-3 rounded-xl px-4 py-3"
+                className="flex items-center gap-3 border-b border-white/[0.08] py-3.5 text-sm text-parchment"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-verdigris/15 text-verdigris-glow">
-                  <promise.icon className="h-4 w-4" />
-                </span>
-                <span className="text-sm text-parchment">{promise.text}</span>
-              </motion.li>
+                <promise.icon className="h-4 w-4 shrink-0 text-verdigris-bright" />
+                {promise.text}
+              </li>
             ))}
           </ul>
           <p className="mt-6 font-mono text-[10px] text-ash-dim">

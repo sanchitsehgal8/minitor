@@ -7,7 +7,7 @@ export const metadata = { title: 'Not found — MiniTor' };
 
 export default function NotFound() {
   return (
-    <main className="grain relative isolate flex min-h-screen flex-col overflow-hidden bg-void px-5 py-5">
+    <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-void px-5 py-5">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
         <div className="absolute h-[30rem] w-[30rem] rounded-full bg-verdigris/15 blur-[120px]" />
         {[0, 1, 2].map((ring) => (

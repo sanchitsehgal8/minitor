@@ -74,8 +74,7 @@ export function ArchitectureDiagram() {
         <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-5 py-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:py-0">
           <div>
             <Reveal>
-              <p className="eyebrow">Architecture</p>
-              <h2 className="mt-4 font-display text-4xl text-white sm:text-5xl">How it’s put together</h2>
+              <h2 className="font-display text-4xl text-white sm:text-5xl">How it’s put together</h2>
               <p className="mt-5 max-w-lg text-lg text-ash-light">
                 Three layers. The rules live in the middle one, on their own, which is why the same
                 HTTPS and private-mode checks can run in your browser and again on the server.
@@ -139,7 +138,6 @@ export function ArchitectureDiagram() {
           </div>
 
           <div aria-hidden="true" className="relative hidden h-[34rem] items-center justify-center lg:flex">
-            <div className="absolute inset-[15%] rounded-full bg-verdigris/15 blur-[90px]" />
             <div className="relative h-80 w-80 [perspective:1600px]">
               <motion.div
                 className="preserve-3d absolute inset-0"
@@ -154,7 +152,7 @@ export function ArchitectureDiagram() {
                       style={{ z: depths[index] }}
                       className={`absolute inset-0 rounded-2xl border p-6 transition-[border-color,background-color,box-shadow,opacity] duration-500 ${
                         isActive
-                          ? 'border-verdigris-bright/60 bg-ink-raised/90 shadow-glow'
+                          ? 'border-verdigris-bright/60 bg-ink-raised/95'
                           : 'border-white/[0.08] bg-ink-raised/80 opacity-50'
                       }`}
                     >

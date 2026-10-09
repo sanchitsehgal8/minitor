@@ -55,13 +55,9 @@ export default function LandingPage() {
       <BrowserShowcase />
 
       <section id="honesty" className="relative scroll-mt-16 border-t border-white/[0.06] bg-ink-sunken/40 py-24 lg:py-32">
-        <div aria-hidden="true" className="bg-grid mask-radial pointer-events-none absolute inset-0 opacity-40" />
         <div className="relative mx-auto max-w-6xl px-5">
           <Reveal className="max-w-2xl">
-            <p className="eyebrow">Honest by construction</p>
-            <h2 className="mt-4 font-display text-4xl text-white sm:text-5xl">
-              What works, <span className="italic text-ash-light">and what doesn’t</span>
-            </h2>
+            <h2 className="font-display text-4xl text-white sm:text-5xl">What works, and what doesn’t</h2>
             <p className="mt-5 text-lg text-ash-light">
               A hosted page cannot inspect the network traffic of a site it embeds — browsers
               prevent it deliberately. Rather than fake the parts that need that access, MiniTor

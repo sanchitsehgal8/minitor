@@ -75,7 +75,7 @@ export function ObjectivesBento({ analysis }: { readonly analysis: AnalysisShowc
 
   return (
     <LayoutGroup>
-      <div role="group" aria-label="Filter by status" className="mt-10 flex flex-wrap gap-1 rounded-full border border-white/[0.07] bg-white/[0.02] p-1 sm:inline-flex">
+      <div role="group" aria-label="Filter by status" className="mt-10 flex flex-wrap gap-1 rounded-lg border border-white/[0.07] p-1 sm:inline-flex">
         {FILTERS.map((entry) => {
           const isActive = entry === filter;
           return (
@@ -84,14 +84,14 @@ export function ObjectivesBento({ analysis }: { readonly analysis: AnalysisShowc
               type="button"
               aria-pressed={isActive}
               onClick={() => setFilter(entry)}
-              className={`relative rounded-full px-4 py-1.5 text-sm transition-colors duration-200 ${
+              className={`relative rounded-md px-4 py-1.5 text-sm transition-colors duration-200 ${
                 isActive ? 'text-void' : 'text-ash-light hover:text-white'
               }`}
             >
               {isActive ? (
                 <motion.span
                   layoutId="bento-filter"
-                  className="absolute inset-0 rounded-full bg-parchment"
+                  className="absolute inset-0 rounded-md bg-parchment"
                   transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
               ) : null}
@@ -118,12 +118,7 @@ export function ObjectivesBento({ analysis }: { readonly analysis: AnalysisShowc
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.45, ease: EASE }}
-              onMouseMove={(event) => {
-                const rect = event.currentTarget.getBoundingClientRect();
-                event.currentTarget.style.setProperty('--x', `${event.clientX - rect.left}px`);
-                event.currentTarget.style.setProperty('--y', `${event.clientY - rect.top}px`);
-              }}
-              className={`spotlight surface flex flex-col rounded-2xl ${SPAN[objective.id]}`}
+              className={`flex flex-col overflow-hidden rounded-xl border border-white/[0.07] bg-ink-raised/60 ${SPAN[objective.id]}`}
             >
               <div
                 aria-hidden="true"
@@ -196,7 +191,7 @@ function AnalysisVisual({ analysis }: { readonly analysis: AnalysisShowcase }) {
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <div ref={ref} className="flex h-full items-center gap-6 bg-gradient-to-br from-verdigris/[0.07] via-transparent to-transparent px-6 sm:gap-10 sm:px-10">
+    <div ref={ref} className="flex h-full items-center gap-6 px-6 sm:gap-10 sm:px-10">
       <div className="relative shrink-0">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9" />
@@ -212,7 +207,6 @@ function AnalysisVisual({ analysis }: { readonly analysis: AnalysisShowcase }) {
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: isInView ? circumference * (1 - analysis.total / 100) : circumference }}
             transition={{ duration: 1.6, ease: EASE }}
-            style={{ filter: `drop-shadow(0 0 8px ${BAND_STROKE[analysis.band]}66)` }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -256,7 +250,7 @@ function BlockingVisual() {
   return (
     <div ref={ref} className="relative h-full bg-gradient-to-r from-transparent via-transparent to-amber/[0.08]">
       <div className="absolute inset-y-6 right-12 w-px bg-gradient-to-b from-transparent via-amber/70 to-transparent" />
-      <div className="absolute right-6 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-amber/40 bg-amber/10 text-amber-glow shadow-glow-amber">
+      <div className="absolute right-6 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-amber/40 bg-amber/10 text-amber-glow">
         <ShieldIcon className="h-5 w-5" />
       </div>
       <ul className="absolute inset-y-0 left-0 right-24 flex flex-col justify-center gap-2 pl-5">

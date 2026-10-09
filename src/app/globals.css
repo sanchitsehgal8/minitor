@@ -59,60 +59,29 @@
     font-feature-settings: 'ss01', 'zero';
   }
 
+  /* Small label above a group. Sentence case, no tracking — it labels, it
+     does not announce. */
   .eyebrow {
-    @apply font-mono text-xs uppercase text-ash;
-    letter-spacing: 0.14em;
+    @apply font-mono text-xs text-ash;
   }
 
   /* ── Buttons ─────────────────────────────────────────────────────────── */
 
   .btn-primary {
-    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full
-           px-5 py-2.5 font-body text-sm font-medium text-void transition-all duration-300 ease-out
-           disabled:cursor-not-allowed disabled:opacity-50;
-    background-image: linear-gradient(180deg, #8af0d6 0%, #5bc2aa 55%, #3e8e7e 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-      0 0 0 1px rgba(91, 194, 170, 0.5),
-      0 10px 30px -10px rgba(91, 194, 170, 0.7);
-  }
-
-  .btn-primary::after {
-    content: '';
-    @apply pointer-events-none absolute inset-0;
-    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
-    transform: translateX(-120%);
-    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-      0 0 0 1px rgba(138, 240, 214, 0.7),
-      0 14px 40px -8px rgba(91, 194, 170, 0.85);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:hover:not(:disabled)::after {
-    transform: translateX(120%);
-  }
-
-  .btn-primary:active:not(:disabled) {
-    transform: translateY(0) scale(0.98);
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-verdigris-bright px-5 py-2.5
+           font-body text-sm font-medium text-void transition-colors duration-150
+           hover:bg-verdigris-glow active:bg-verdigris disabled:cursor-not-allowed
+           disabled:opacity-50 disabled:hover:bg-verdigris-bright;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/10
-           bg-white/[0.04] px-5 py-2.5 font-body text-sm font-medium text-parchment
-           backdrop-blur-md transition-all duration-300 ease-out
-           hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.98];
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-white/[0.12]
+           bg-transparent px-5 py-2.5 font-body text-sm font-medium text-parchment
+           transition-colors duration-150 hover:border-white/25 hover:bg-white/[0.04];
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 font-body
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 font-body
            text-sm text-ash-light transition-colors duration-200 hover:bg-white/[0.06] hover:text-white;
   }
 
@@ -162,21 +131,6 @@
     @apply inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-xs;
   }
 
-  /* Gradient text: headline fills that read as light falling across type. */
-  .text-gradient {
-    background-image: linear-gradient(180deg, #ffffff 0%, #ece8e1 45%, #8a8f98 120%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .text-gradient-verdigris {
-    background-image: linear-gradient(100deg, #8af0d6 0%, #5bc2aa 40%, #d8a24a 110%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
   /* Card whose border catches a highlight under the cursor (set --x/--y). */
   .spotlight {
     @apply relative isolate overflow-hidden;
@@ -194,23 +148,6 @@
 
   .spotlight:hover::before {
     @apply opacity-100;
-  }
-
-  /* Rotating conic border; the element needs a background of its own. */
-  .border-beam {
-    border: 1px solid transparent;
-    background:
-      linear-gradient(theme('colors.ink.raised'), theme('colors.ink.raised')) padding-box,
-      conic-gradient(
-          from var(--border-angle),
-          rgba(255, 255, 255, 0.06) 0deg,
-          rgba(255, 255, 255, 0.06) 250deg,
-          #5bc2aa 300deg,
-          #8af0d6 330deg,
-          rgba(255, 255, 255, 0.06) 360deg
-        )
-        border-box;
-    animation: border-spin 6s linear infinite;
   }
 }
 

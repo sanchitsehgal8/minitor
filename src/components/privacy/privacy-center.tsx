@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState, type MouseEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { PrivacyReport } from '@/components/privacy/privacy-report';
 import {
@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/icons';
 import { useRovingTablist } from '@/components/ui/tablist';
 import { useScans } from '@/hooks/use-scans';
-import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { scoreBand } from '@/lib/scan/privacy-score';
 
 const CENTER_VIEWS = ['scan', 'history', 'compare'] as const;
@@ -210,39 +209,24 @@ function ScanHome({
 
   return (
     <motion.div variants={staggerParent} initial="hidden" animate="show" className="px-4 pb-6 pt-3">
-      <motion.div
-        variants={staggerChild}
-        className="relative -mx-1 overflow-hidden rounded-2xl border border-white/[0.06] px-5 pb-5 pt-5"
-        style={{
-          background:
-            'radial-gradient(120% 90% at 100% 0%, rgba(62,142,126,0.22), transparent 55%), linear-gradient(180deg, #12161D, #0B0E13)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
-        }}
-      >
-        <div aria-hidden="true" className="bg-grid mask-radial pointer-events-none absolute inset-0 opacity-60 [background-size:24px_24px]" />
-        <OrbitMark />
-        <div className="relative max-w-[15rem]">
-          <p className="eyebrow text-verdigris-bright">Privacy Center</p>
-          <h3 className="mt-2 font-display text-4xl leading-[1.02] text-gradient">Analyse a website</h3>
-          <p className="mt-3 text-xs leading-relaxed text-ash-light">
-            See which domains a site contacts, what MiniTor’s rules would block, and how its
-            privacy and security observations score.
-          </p>
-        </div>
+      <motion.div variants={staggerChild} className="pt-2">
+        <h3 className="font-display text-4xl leading-[1.02] text-white">Analyse a website</h3>
+        <p className="mt-2 text-xs leading-relaxed text-ash-light">
+          See which domains a site contacts, what MiniTor’s rules would block, and how its privacy
+          and security observations score.
+        </p>
       </motion.div>
 
-      <motion.div variants={staggerChild} className="mt-3">
+      <motion.div variants={staggerChild} className="mt-5">
         {currentDomain ? (
           <button
             type="button"
             onClick={() => void scans.startScan(currentDomain)}
-            onMouseMove={trackSpotlight}
-            className="spotlight border-beam group flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left shadow-lift transition-transform duration-300 ease-out hover:-translate-y-px active:scale-[0.99]"
+            className="group flex w-full items-center gap-3 rounded-lg border border-verdigris-bright/30 bg-verdigris/[0.08] px-3.5 py-3 text-left transition-colors duration-200 hover:border-verdigris-bright/50 hover:bg-verdigris/[0.12]"
           >
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-verdigris-bright/25 bg-verdigris-bright/10 text-verdigris-bright"
-              style={{ boxShadow: '0 0 20px -6px rgba(91,194,170,0.7)' }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-verdigris-bright/10 text-verdigris-bright"
             >
               <GlobeIcon className="h-5 w-5" />
             </span>
@@ -281,7 +265,7 @@ function ScanHome({
         <label htmlFor="scan-url" className="eyebrow block">
           Or analyse any URL
         </label>
-        <div className="mt-2 flex items-center gap-2 rounded-full border border-white/[0.09] bg-black/30 py-1 pl-4 pr-1 transition-all duration-200 focus-within:border-verdigris-bright/60 focus-within:bg-black/40 focus-within:shadow-[0_0_0_4px_rgba(91,194,170,0.12)] hover:border-white/[0.15]">
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/[0.09] bg-black/30 py-1 pl-4 pr-1 transition-all duration-200 focus-within:border-verdigris-bright/60 focus-within:bg-black/40 focus-within:shadow-[0_0_0_4px_rgba(91,194,170,0.12)] hover:border-white/[0.15]">
           <ScanIcon className="h-4 w-4 shrink-0 text-ash" />
           <input
             id="scan-url"
@@ -381,61 +365,11 @@ function ScanHome({
   );
 }
 
-/** Updates the spotlight's --x/--y so its highlight follows the cursor. */
-function trackSpotlight(event: MouseEvent<HTMLElement>) {
-  const rect = event.currentTarget.getBoundingClientRect();
-  event.currentTarget.style.setProperty('--x', `${event.clientX - rect.left}px`);
-  event.currentTarget.style.setProperty('--y', `${event.clientY - rect.top}px`);
-}
-
 function Stat({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (
     <div className="surface relative overflow-hidden px-3.5 py-3">
       <dt className="text-xs leading-tight text-ash">{label}</dt>
       <dd className="mt-1.5 font-display text-3xl leading-none text-white">{children}</dd>
     </div>
-  );
-}
-
-/**
- * The hero's mark: three domains orbiting a site. Decorative, and its rotation
- * is gated on reduced motion explicitly since it never ends.
- */
-function OrbitMark() {
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const orbits = [
-    { r: 22, color: '#5BC2AA', duration: 9, start: 0 },
-    { r: 36, color: '#D8A24A', duration: 14, start: 140 },
-    { r: 50, color: '#E0775A', duration: 22, start: 260 },
-  ];
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 120 120"
-      className="pointer-events-none absolute -right-6 -top-6 h-[150px] w-[150px] opacity-90"
-    >
-      <defs>
-        <radialGradient id="orbit-core" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#8AF0D6" />
-          <stop offset="100%" stopColor="#3E8E7E" />
-        </radialGradient>
-      </defs>
-      {orbits.map((orbit) => (
-        <circle key={orbit.r} cx="60" cy="60" r={orbit.r} fill="none" stroke="#FFFFFF" strokeOpacity={0.07} />
-      ))}
-      <circle cx="60" cy="60" r="7" fill="url(#orbit-core)" style={{ filter: 'drop-shadow(0 0 6px #5BC2AA)' }} />
-      {orbits.map((orbit) => (
-        <motion.g
-          // Keyed on the preference too: it resolves after mount, and only a
-          // remount reliably stops a repeating animation already running.
-          key={`dot-${orbit.r}-${prefersReducedMotion ? 'still' : 'spin'}`}
-          style={{ originX: '60px', originY: '60px', rotate: orbit.start }}
-          animate={prefersReducedMotion ? undefined : { rotate: orbit.start + 360 }}
-          transition={{ duration: orbit.duration, repeat: Infinity, ease: 'linear' }}
-        >
-          <circle cx={60 + orbit.r} cy="60" r="2.6" fill={orbit.color} style={{ filter: `drop-shadow(0 0 4px ${orbit.color})` }} />
-        </motion.g>
-      ))}
-    </svg>
   );
 }

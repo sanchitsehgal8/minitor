@@ -153,10 +153,10 @@ function StartSearch({
         Search the web
       </label>
       <div
-        className={`glass group relative flex h-14 items-center gap-3 rounded-full pl-5 pr-1.5 transition-[border-color,box-shadow] duration-300 ease-chrome ${
+        className={`group relative flex h-14 items-center gap-3 rounded-lg border border-white/10 bg-ink-raised pl-5 pr-1.5 transition-[border-color,box-shadow] duration-200 ease-chrome ${
           isPrivate
-            ? 'focus-within:border-amber/50 focus-within:shadow-[0_0_0_5px_rgba(216,162,74,0.12),0_24px_60px_-20px_rgba(216,162,74,0.35)]'
-            : 'focus-within:border-verdigris-bright/50 focus-within:shadow-[0_0_0_5px_rgba(91,194,170,0.12),0_24px_60px_-20px_rgba(62,142,126,0.55)]'
+            ? 'focus-within:border-amber/50 focus-within:shadow-[0_0_0_4px_rgba(216,162,74,0.12)]'
+            : 'focus-within:border-verdigris-bright/50 focus-within:shadow-[0_0_0_4px_rgba(91,194,170,0.12)]'
         }`}
       >
         <SearchIcon className="h-[18px] w-[18px] shrink-0 text-ash transition-colors duration-300 group-focus-within:text-parchment" />
@@ -251,11 +251,7 @@ function StartPage({
 
           <motion.h1
             variants={rise}
-            className={`mt-6 font-display text-4xl sm:text-5xl ${
-              isPrivate
-                ? 'bg-[linear-gradient(180deg,#F5C46B_0%,#D8A24A_60%,#A87A33_120%)] bg-clip-text text-transparent'
-                : 'text-gradient'
-            }`}
+            className={`mt-6 font-display text-4xl sm:text-5xl ${isPrivate ? 'text-amber-glow' : 'text-white'}`}
           >
             {isPrivate ? 'Private tab' : 'Where to?'}
           </motion.h1>

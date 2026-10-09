@@ -121,8 +121,7 @@ const config: Config = {
         lift: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 12px 32px -16px rgba(0,0,0,0.6)',
         glow: '0 0 0 1px rgba(91,194,170,0.35), 0 8px 32px -6px rgba(62,142,126,0.55)',
         'glow-amber': '0 0 0 1px rgba(216,162,74,0.35), 0 8px 28px -8px rgba(216,162,74,0.45)',
-        window:
-          '0 0 0 1px rgba(255,255,255,0.06), 0 40px 120px -30px rgba(0,0,0,0.9), 0 0 90px -20px rgba(62,142,126,0.35)',
+        window: '0 0 0 1px rgba(255,255,255,0.06), 0 40px 100px -30px rgba(0,0,0,0.9)',
       },
       transitionTimingFunction: {
         chrome: 'cubic-bezier(0.32, 0.72, 0, 1)',

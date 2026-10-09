@@ -14,9 +14,9 @@ const LINKS = [
 ] as const;
 
 /**
- * Floating glass navigation. It sits flush and transparent over the hero, then
- * condenses into a pill with a backdrop once the page has scrolled, so it never
- * competes with the headline but stays legible over everything below it.
+ * Top navigation. Transparent over the hero, then gains a backdrop and a
+ * hairline once the page has scrolled, so it stays legible over the sections
+ * below without competing with the headline.
  */
 export function SiteNav() {
   const { scrollY } = useScroll();
@@ -31,16 +31,11 @@ export function SiteNav() {
       initial={{ y: -24, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5"
+      className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
+        isCondensed ? 'border-white/[0.07] bg-void/85 backdrop-blur-md' : 'border-transparent bg-transparent'
+      }`}
     >
-      <nav
-        aria-label="Main"
-        className={`mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full border px-3 py-2 transition-all duration-500 ease-out sm:pl-5 ${
-          isCondensed
-            ? 'border-white/[0.08] bg-ink/70 shadow-lift backdrop-blur-xl'
-            : 'border-transparent bg-transparent'
-        }`}
-      >
+      <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3">
         <Logo />
 
         <ul className="hidden items-center gap-1 md:flex">
@@ -48,7 +43,7 @@ export function SiteNav() {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="rounded-full px-3.5 py-1.5 text-sm text-ash-light transition-colors duration-200 hover:bg-white/[0.06] hover:text-white"
+                className="rounded-md px-3 py-1.5 text-sm text-ash-light transition-colors duration-200 hover:text-white"
               >
                 {link.label}
               </a>
