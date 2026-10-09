@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { motion, type Variants } from 'framer-motion';
+import { useState, type MouseEvent, type ReactNode } from 'react';
 
 import { EMBEDDABLE_SITES } from '@/lib/privacy/embeddable-sites';
 import {
@@ -12,7 +13,22 @@ import {
 } from '@/lib/privacy/search';
 import { upgradeToHttps } from '@/lib/privacy/url';
 import type { NavigateFn, TabView } from '@/lib/browser/tabs';
-import { ShieldIcon } from '@/components/ui/icons';
+import {
+  ArrowRightIcon,
+  ArrowUpRightIcon,
+  LayersIcon,
+  MaskIcon,
+  SearchIcon,
+  ShieldIcon,
+  UnlockIcon,
+  WarnIcon,
+} from '@/components/ui/icons';
+import { LogoMark } from '@/components/ui/logo';
+import { SiteMark } from '@/components/ui/panel-states';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+
+const ENTER_EASE = [0.16, 1, 0.3, 1] as const;
+const SPRING = { type: 'spring', stiffness: 500, damping: 40 } as const;
 
 export function Viewport({
   view,
@@ -64,13 +80,42 @@ export function Viewport({
       return <NotEmbeddable href={view.href} onNavigate={onNavigate} />;
 
     case 'error':
-      return <ErrorState message={view.message} />;
+      return <ErrorState message={view.message} onNavigate={onNavigate} />;
 
     default: {
       const exhaustive: never = view;
       return exhaustive;
     }
   }
+}
+
+/* ── Start page ─────────────────────────────────────────────────────────── */
+
+const stagger: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
+};
+
+const rise: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: ENTER_EASE } },
+};
+
+const tileList: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.025, delayChildren: 0.12 } },
+};
+
+const tile: Variants = {
+  hidden: { opacity: 0, y: 10, scale: 0.98 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: ENTER_EASE } },
+};
+
+/** Feeds the `.spotlight` glow its cursor position. */
+function trackSpotlight(event: MouseEvent<HTMLElement>) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  event.currentTarget.style.setProperty('--x', `${event.clientX - rect.left}px`);
+  event.currentTarget.style.setProperty('--y', `${event.clientY - rect.top}px`);
 }
 
 /**
@@ -80,15 +125,24 @@ export function Viewport({
  * DuckDuckGo — which refuses framing, so every search dead-ended on the
  * "refuses to be embedded" screen. Surfacing it here, with the engine named,
  * makes the constraint visible instead of surprising.
+ *
+ * The engine picker is a native radio group dressed as a segmented control:
+ * arrow keys, labelling and form semantics come from the platform for free.
  */
-function StartSearch({ onNavigate }: { readonly onNavigate: NavigateFn }) {
+function StartSearch({
+  isPrivate,
+  onNavigate,
+}: {
+  readonly isPrivate: boolean;
+  readonly onNavigate: NavigateFn;
+}) {
   const [engineId, setEngineId] = useState(DEFAULT_ENGINE_ID);
   const [query, setQuery] = useState('');
   const engine = engineById(engineId);
 
   return (
     <form
-      className="mt-6 max-w-xl"
+      className="mt-8 w-full max-w-2xl"
       onSubmit={(event) => {
         event.preventDefault();
         const trimmed = query.trim();
@@ -98,38 +152,67 @@ function StartSearch({ onNavigate }: { readonly onNavigate: NavigateFn }) {
       <label htmlFor="start-search" className="sr-only">
         Search the web
       </label>
-      <div className="flex flex-wrap gap-2">
+      <div
+        className={`glass group relative flex h-14 items-center gap-3 rounded-full pl-5 pr-1.5 transition-[border-color,box-shadow] duration-300 ease-chrome ${
+          isPrivate
+            ? 'focus-within:border-amber/50 focus-within:shadow-[0_0_0_5px_rgba(216,162,74,0.12),0_24px_60px_-20px_rgba(216,162,74,0.35)]'
+            : 'focus-within:border-verdigris-bright/50 focus-within:shadow-[0_0_0_5px_rgba(91,194,170,0.12),0_24px_60px_-20px_rgba(62,142,126,0.55)]'
+        }`}
+      >
+        <SearchIcon className="h-[18px] w-[18px] shrink-0 text-ash transition-colors duration-300 group-focus-within:text-parchment" />
         <input
           id="start-search"
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search the web"
-          className="min-w-0 flex-1 rounded-md border border-ash-light bg-white px-3 py-2 font-body text-base text-ink outline-none transition-colors duration-150 placeholder:text-ash focus:border-verdigris"
+          className="min-w-0 flex-1 bg-transparent font-body text-base text-parchment outline-none placeholder:text-ash"
         />
-        <button type="submit" className="btn-primary shrink-0">
-          Search
+        <button type="submit" className="btn-primary h-11 shrink-0 px-4 sm:px-5">
+          <span className="hidden sm:inline">Search</span>
+          <span className="sr-only sm:hidden">Search</span>
+          <ArrowRightIcon className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        <label htmlFor="start-engine" className="font-body text-xs text-ash-dim">
+      <fieldset className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+        <legend className="sr-only">Engine</legend>
+        <span aria-hidden="true" className="eyebrow shrink-0 pl-1">
           Engine
-        </label>
-        <select
-          id="start-engine"
-          value={engineId}
-          onChange={(event) => setEngineId(event.target.value)}
-          className="rounded-md border border-ash-light bg-white px-2 py-1 font-body text-xs text-ink outline-none focus:border-verdigris"
-        >
-          {EMBEDDABLE_ENGINES.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-ash-dim">{engine.blurb}</span>
-      </div>
+        </span>
+        <div className="relative flex w-fit rounded-full border border-white/[0.06] bg-black/30 p-1">
+          {EMBEDDABLE_ENGINES.map((option) => {
+            const isChecked = option.id === engineId;
+            return (
+              <label
+                key={option.id}
+                className={`relative cursor-pointer rounded-full px-3 py-1 font-body text-xs font-medium transition-colors duration-200 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-verdigris-bright ${
+                  isChecked ? 'text-parchment' : 'text-ash hover:text-ash-light'
+                }`}
+              >
+                {isChecked ? (
+                  <motion.span
+                    layoutId="start-engine-pill"
+                    transition={SPRING}
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-full border border-white/[0.09] bg-gradient-to-b from-white/[0.1] to-white/[0.04] shadow-lift"
+                  />
+                ) : null}
+                <input
+                  type="radio"
+                  name="start-engine"
+                  value={option.id}
+                  checked={isChecked}
+                  onChange={() => setEngineId(option.id)}
+                  className="sr-only"
+                />
+                <span className="relative">{option.name}</span>
+              </label>
+            );
+          })}
+        </div>
+        <span className="min-w-0 pl-1 text-xs text-ash sm:pl-0">{engine.blurb}</span>
+      </fieldset>
     </form>
   );
 }
@@ -142,37 +225,231 @@ function StartPage({
   readonly onNavigate: NavigateFn;
 }) {
   return (
-    <div className="h-full overflow-y-auto bg-paper px-5 py-10 sm:px-10">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="font-display text-2xl text-ink">
-          {isPrivate ? 'Private tab' : 'Where to?'}
-        </h1>
-        <p className="mt-2 max-w-xl text-base text-ash-dim">
-          Search below, or type any URL in the address bar — HTTPS enforcement works on all of
-          them. Pages only render if the site permits being embedded, so here are ones that do.
-        </p>
+    <div className="relative h-full overflow-hidden bg-ink">
+      <Ambient tone={isPrivate ? 'amber' : 'verdigris'} />
 
-        <StartSearch onNavigate={onNavigate} />
+      <div className="log-scroll relative h-full overflow-y-auto">
+        <motion.div
+          // Re-run the entrance when the tab flips mode, so the change reads.
+          key={isPrivate ? 'private' : 'standard'}
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="mx-auto flex max-w-4xl flex-col px-5 pb-16 pt-10 sm:px-10 sm:pt-16"
+        >
+          <motion.div variants={rise}>
+            {isPrivate ? (
+              <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-amber/10 text-amber-glow ring-1 ring-inset ring-amber/30 shadow-glow-amber">
+                <MaskIcon className="h-7 w-7" />
+              </span>
+            ) : (
+              <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.03] ring-1 ring-inset ring-white/10 shadow-glow">
+                <LogoMark className="h-8 w-8" />
+              </span>
+            )}
+          </motion.div>
 
-        <ul className="mt-8 grid gap-2 sm:grid-cols-2">
-          {EMBEDDABLE_SITES.map((site) => (
-            <li key={site.url}>
-              <button
-                type="button"
-                onClick={() => onNavigate(site.url)}
-                className="w-full rounded-lg border border-ash-light bg-white p-4 text-left transition-colors duration-150 hover:border-verdigris hover:bg-verdigris-wash"
-              >
-                <span className="block font-body text-base font-medium text-ink">{site.title}</span>
-                <span className="technical mt-0.5 block truncate text-xs text-ash">
-                  {site.hostname}
+          <motion.h1
+            variants={rise}
+            className={`mt-6 font-display text-4xl sm:text-5xl ${
+              isPrivate
+                ? 'bg-[linear-gradient(180deg,#F5C46B_0%,#D8A24A_60%,#A87A33_120%)] bg-clip-text text-transparent'
+                : 'text-gradient'
+            }`}
+          >
+            {isPrivate ? 'Private tab' : 'Where to?'}
+          </motion.h1>
+
+          <motion.p variants={rise} className="mt-4 max-w-xl text-base leading-relaxed text-ash-light">
+            Search below, or type any URL in the address bar — HTTPS enforcement works on all of
+            them. Pages only render if the site permits being embedded, so here are ones that do.
+          </motion.p>
+
+          {isPrivate ? (
+            <motion.p
+              variants={rise}
+              className="mt-4 flex max-w-xl items-start gap-2.5 rounded-xl border border-amber/20 bg-amber/[0.06] px-3.5 py-3 text-sm leading-relaxed text-amber-glow/90"
+            >
+              <MaskIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
+              <span>
+                Nothing opened in this tab is written to your history or bookmarks.{' '}
+                <span className="text-parchment">
+                  Your network, internet provider and the sites themselves can still see it.
                 </span>
-                <span className="mt-1.5 block text-sm text-ash-dim">{site.blurb}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+              </span>
+            </motion.p>
+          ) : null}
+
+          <motion.div variants={rise}>
+            <StartSearch isPrivate={isPrivate} onNavigate={onNavigate} />
+          </motion.div>
+
+          <motion.div variants={rise} className="mt-14 flex items-baseline justify-between gap-4">
+            <h2 className="eyebrow">Sites that permit framing</h2>
+            <span className="technical text-xs text-ash">{EMBEDDABLE_SITES.length} verified</span>
+          </motion.div>
+
+          <motion.ul
+            variants={tileList}
+            className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
+          >
+            {EMBEDDABLE_SITES.map((site) => {
+              const isFirstParty = site.url.startsWith('/');
+              return (
+                <motion.li key={site.url} variants={tile}>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(site.url)}
+                    onMouseMove={trackSpotlight}
+                    className={`spotlight group flex h-full w-full items-start gap-3 rounded-xl border p-3.5 text-left transition-[transform,border-color,background-color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 active:scale-[0.99] ${
+                      isFirstParty
+                        ? 'border-verdigris-bright/25 bg-verdigris/[0.07] hover:border-verdigris-bright/45'
+                        : 'border-white/[0.06] bg-white/[0.025] hover:border-white/[0.14] hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <SiteMark url={site.url} size="lg" />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate font-body text-sm font-medium text-parchment">
+                          {site.title}
+                        </span>
+                        <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 -translate-x-1 text-ash opacity-0 transition-all duration-300 ease-out group-hover:translate-x-0 group-hover:opacity-100" />
+                      </span>
+                      <span className="technical mt-0.5 block truncate text-xs text-ash">
+                        {site.hostname}
+                      </span>
+                      <span className="mt-1.5 block text-sm leading-snug text-ash-light">
+                        {site.blurb}
+                      </span>
+                    </span>
+                  </button>
+                </motion.li>
+              );
+            })}
+          </motion.ul>
+        </motion.div>
       </div>
     </div>
+  );
+}
+
+/** The new-tab backdrop: a faint grid under a soft pool of light. */
+function Ambient({ tone }: { readonly tone: 'verdigris' | 'amber' }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const glow =
+    tone === 'amber'
+      ? 'bg-[radial-gradient(closest-side,rgba(216,162,74,0.22),transparent)]'
+      : 'bg-[radial-gradient(closest-side,rgba(62,142,126,0.32),transparent)]';
+
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="bg-grid mask-radial absolute inset-0 opacity-70" />
+      {/* Positioned by the wrapper: Framer's inline transform would erase a translate class. */}
+      <div className="absolute left-1/2 top-[-18rem] h-[36rem] w-[52rem] -translate-x-1/2">
+        <motion.div
+          key={tone}
+          className={`h-full w-full rounded-full blur-2xl ${glow}`}
+          initial={{ opacity: 0 }}
+          animate={
+            prefersReducedMotion
+              ? { opacity: 1 }
+              : { opacity: [0.75, 1, 0.75], scale: [1, 1.06, 1] }
+          }
+          transition={
+            prefersReducedMotion
+              ? { duration: 0.6 }
+              : { duration: 9, ease: 'easeInOut', repeat: Infinity }
+          }
+        />
+      </div>
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink to-transparent" />
+    </div>
+  );
+}
+
+/* ── Terminal views ─────────────────────────────────────────────────────── */
+
+/** Shared frame for the interstitial, refusal and error cards. */
+function StateCard({
+  tone,
+  icon,
+  eyebrow,
+  children,
+}: {
+  readonly tone: 'amber' | 'neutral';
+  readonly icon: ReactNode;
+  readonly eyebrow: ReactNode;
+  readonly children: ReactNode;
+}) {
+  const isAmber = tone === 'amber';
+  return (
+    <div className="relative h-full overflow-hidden bg-ink">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="bg-grid mask-radial absolute inset-0 opacity-40" />
+        <div
+          className={`absolute left-1/2 top-[-12rem] h-[30rem] w-[44rem] -translate-x-1/2 rounded-full blur-2xl ${
+            isAmber
+              ? 'bg-[radial-gradient(closest-side,rgba(216,162,74,0.2),transparent)]'
+              : 'bg-[radial-gradient(closest-side,rgba(138,143,152,0.14),transparent)]'
+          }`}
+        />
+      </div>
+
+      <div className="log-scroll relative h-full overflow-y-auto">
+        <div className="flex min-h-full items-start justify-center px-4 py-8 sm:items-center sm:px-6 sm:py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, ease: ENTER_EASE }}
+            className={`glass relative w-full max-w-xl overflow-hidden rounded-2xl p-6 sm:p-8 ${
+              isAmber ? 'border-amber/25' : ''
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent to-transparent ${
+                isAmber ? 'via-amber-glow/70' : 'via-white/25'
+              }`}
+            />
+            <div className="flex items-center gap-3">
+              <motion.span
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 22, delay: 0.08 }}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ${
+                  isAmber
+                    ? 'bg-amber/10 text-amber-glow ring-amber/30 shadow-glow-amber'
+                    : 'bg-white/[0.05] text-parchment ring-white/10 shadow-lift'
+                }`}
+              >
+                {icon}
+              </motion.span>
+              <div className={`eyebrow flex items-center gap-1.5 ${isAmber ? 'text-amber' : ''}`}>
+                {eyebrow}
+              </div>
+            </div>
+            {children}
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The requested URL, set apart; a plain-http scheme is called out in amber. */
+function UrlBlock({ href }: { readonly href: string }) {
+  const isHttp = href.startsWith('http://');
+  return (
+    <p className="technical mt-5 break-all rounded-lg border border-white/[0.06] bg-black/40 px-3.5 py-2.5 text-sm text-ash-light">
+      {isHttp ? (
+        <>
+          <span className="text-amber">http://</span>
+          {href.slice('http://'.length)}
+        </>
+      ) : (
+        href
+      )}
+    </p>
   );
 }
 
@@ -186,45 +463,45 @@ function InsecureInterstitial({
   const hostname = safeHostname(href);
 
   return (
-    <div className="flex h-full items-start justify-center overflow-y-auto bg-paper px-5 py-12">
-      <div className="w-full max-w-lg rounded-lg border border-amber bg-amber-wash p-6">
-        <p className="flex items-center gap-2 font-body text-sm font-medium text-amber-dim">
-          <ShieldIcon />
+    <StateCard
+      tone="amber"
+      icon={<UnlockIcon className="h-6 w-6" />}
+      eyebrow={
+        <>
+          <ShieldIcon className="h-3.5 w-3.5" />
           Connection is not encrypted
-        </p>
+        </>
+      }
+    >
+      <h1 className="mt-6 break-words font-display text-3xl text-parchment">
+        {hostname} was requested over http
+      </h1>
 
-        <h1 className="mt-3 font-display text-2xl text-ink">
-          {hostname} was requested over http
-        </h1>
+      <p className="mt-3 text-base leading-relaxed text-ash-light">
+        MiniTor did not load this page. Over plain http, anyone between you and this site — your
+        network, your internet provider — can read and change what is sent, including anything you
+        type into it.
+      </p>
 
-        <p className="mt-3 text-base text-ink">
-          MiniTor did not load this page. Over plain http, anyone between you and this site — your
-          network, your internet provider — can read and change what is sent, including anything you
-          type into it.
-        </p>
+      <UrlBlock href={href} />
 
-        <p className="technical mt-4 break-all rounded-md border border-amber-dim bg-white px-3 py-2 text-sm text-ink">
-          {href}
-        </p>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={() => onNavigate(upgradeToHttps(href))} className="btn-primary">
-            Try https instead
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate(href, { allowInsecure: true })}
-            className="btn-secondary"
-          >
-            Load it anyway, unencrypted
-          </button>
-        </div>
-
-        <p className="mt-4 text-sm text-ash-dim">
-          Most sites redirect http to https on their own. If “try https” works, use that.
-        </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <button type="button" onClick={() => onNavigate(upgradeToHttps(href))} className="btn-primary">
+          Try https instead
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate(href, { allowInsecure: true })}
+          className="btn-secondary hover:border-amber/40 hover:text-amber-glow"
+        >
+          Load it anyway, unencrypted
+        </button>
       </div>
-    </div>
+
+      <p className="mt-5 border-t border-white/[0.06] pt-4 text-sm text-ash">
+        Most sites redirect http to https on their own. If “try https” works, use that.
+      </p>
+    </StateCard>
   );
 }
 
@@ -241,72 +518,100 @@ function NotEmbeddable({
   const query = queryFromSearchUrl(href);
 
   return (
-    <div className="flex h-full items-start justify-center overflow-y-auto bg-paper px-5 py-12">
-      <div className="w-full max-w-lg rounded-lg border border-ash-light bg-white p-6">
-        <h1 className="font-display text-2xl text-ink">
-          {query ? `${hostname} cannot show search results here` : `${hostname} refuses to be embedded`}
-        </h1>
+    <StateCard
+      tone="neutral"
+      icon={<LayersIcon className="h-6 w-6" />}
+      eyebrow="Framing refused"
+    >
+      <h1 className="mt-6 break-words font-display text-3xl text-parchment">
+        {query ? `${hostname} cannot show search results here` : `${hostname} refuses to be embedded`}
+      </h1>
 
-        <p className="mt-3 text-base text-ink">
-          This is not a MiniTor error. {hostname} sends a header —{' '}
-          <span className="technical text-sm">X-Frame-Options: DENY</span> or a{' '}
-          <span className="technical text-sm">Content-Security-Policy</span> that restricts{' '}
-          <span className="technical text-sm">frame-ancestors</span> — telling your browser not to
-          display it inside another page.
-        </p>
+      <p className="mt-3 text-base leading-relaxed text-ash-light">
+        This is not a MiniTor error. {hostname} sends a header —{' '}
+        <code className="technical whitespace-nowrap rounded-sm bg-white/[0.06] px-1 py-px text-sm text-parchment">
+          X-Frame-Options: DENY
+        </code>{' '}
+        or a{' '}
+        <code className="technical whitespace-nowrap rounded-sm bg-white/[0.06] px-1 py-px text-sm text-parchment">
+          Content-Security-Policy
+        </code>{' '}
+        that restricts{' '}
+        <code className="technical whitespace-nowrap rounded-sm bg-white/[0.06] px-1 py-px text-sm text-parchment">
+          frame-ancestors
+        </code>{' '}
+        — telling your browser not to display it inside another page.
+      </p>
 
-        <p className="mt-3 text-base text-ink">
-          Sites do this to prevent clickjacking, where an attacker frames a real login page under an
-          invisible overlay. Your browser enforces it before any of MiniTor’s code runs, so the
-          refusal cannot be worked around from here — a real browser extension or a native app would
-          be needed.
-        </p>
+      <p className="mt-3 text-base leading-relaxed text-ash-light">
+        Sites do this to prevent clickjacking, where an attacker frames a real login page under an
+        invisible overlay. Your browser enforces it before any of MiniTor’s code runs, so the
+        refusal cannot be worked around from here — a real browser extension or a native app would
+        be needed.
+      </p>
 
-        <p className="technical mt-4 break-all rounded-md border border-ash-light bg-paper px-3 py-2 text-sm text-ink">
-          {href}
-        </p>
+      <UrlBlock href={href} />
 
-        {query ? (
-          <div className="mt-6 rounded-md border border-verdigris/40 bg-verdigris-wash px-4 py-3.5">
-            <p className="font-body text-sm font-medium text-ink">
-              Search “{query}” on an engine that works here
-            </p>
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              {EMBEDDABLE_ENGINES.map((engine) => (
-                <button
-                  key={engine.id}
-                  type="button"
-                  onClick={() => onNavigate(searchUrl(query, engine.id))}
-                  className="rounded-md border border-verdigris-dim/50 bg-white px-3 py-1.5 font-body text-sm text-verdigris-dim transition-colors duration-150 hover:border-verdigris hover:text-verdigris"
-                >
-                  {engine.name}
-                </button>
-              ))}
-            </div>
+      {query ? (
+        <div className="mt-6 rounded-xl border border-verdigris-bright/20 bg-verdigris/[0.08] px-4 py-4">
+          <p className="font-body text-sm font-medium text-parchment">
+            Search “{query}” on an engine that works here
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {EMBEDDABLE_ENGINES.map((engine) => (
+              <button
+                key={engine.id}
+                type="button"
+                onClick={() => onNavigate(searchUrl(query, engine.id))}
+                className="inline-flex items-center gap-1.5 rounded-full border border-verdigris-bright/30 bg-verdigris/10 px-3.5 py-1.5 font-body text-sm text-verdigris-glow transition-all duration-200 hover:border-verdigris-bright/60 hover:bg-verdigris/20 active:scale-[0.98]"
+              >
+                <SearchIcon className="h-3.5 w-3.5" />
+                {engine.name}
+              </button>
+            ))}
           </div>
-        ) : null}
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a href={href} target="_blank" rel="noreferrer noopener" className="btn-secondary">
-            Open in a real browser tab
-          </a>
-          <button type="button" onClick={() => onNavigate('/')} className="btn-secondary">
-            Back to the start page
-          </button>
         </div>
+      ) : null}
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer noopener"
+          className={query ? 'btn-secondary' : 'btn-primary'}
+        >
+          Open in a real browser tab
+          <ArrowUpRightIcon className="h-4 w-4" />
+        </a>
+        <button type="button" onClick={() => onNavigate('/')} className="btn-secondary">
+          Back to the start page
+        </button>
       </div>
-    </div>
+    </StateCard>
   );
 }
 
-function ErrorState({ message }: { readonly message: string }) {
+function ErrorState({
+  message,
+  onNavigate,
+}: {
+  readonly message: string;
+  readonly onNavigate: NavigateFn;
+}) {
   return (
-    <div className="flex h-full items-start justify-center overflow-y-auto bg-paper px-5 py-12">
-      <div className="w-full max-w-lg rounded-lg border border-ash-light bg-white p-6">
-        <h1 className="font-display text-2xl text-ink">That did not work</h1>
-        <p className="mt-3 text-base text-ink">{message}</p>
+    <StateCard
+      tone="neutral"
+      icon={<WarnIcon className="h-6 w-6 text-amber" />}
+      eyebrow="Navigation failed"
+    >
+      <h1 className="mt-6 font-display text-3xl text-parchment">That did not work</h1>
+      <p className="mt-3 text-base leading-relaxed text-ash-light">{message}</p>
+      <div className="mt-6">
+        <button type="button" onClick={() => onNavigate('/')} className="btn-secondary">
+          Back to the start page
+        </button>
       </div>
-    </div>
+    </StateCard>
   );
 }
 

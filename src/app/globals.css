@@ -2,17 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Lets the animated border beam interpolate an angle instead of snapping. */
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 @layer base {
   :root {
-    color-scheme: light;
+    color-scheme: dark;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   html {
+    /* framer's scroll-linked effects measure target offsets against the
+       document; a positioned root keeps that measurement exact. */
+    position: relative;
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-parchment font-body text-base text-ink antialiased;
+    @apply bg-void font-body text-base text-parchment antialiased;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    text-rendering: optimizeLegibility;
   }
 
   /*
@@ -21,19 +35,19 @@
    * ship without it.
    */
   :focus-visible {
-    outline: 2px solid theme('colors.verdigris.DEFAULT');
+    outline: 2px solid theme('colors.verdigris.bright');
     outline-offset: 2px;
-    border-radius: 3px;
+    border-radius: 4px;
   }
 
   .on-ink :focus-visible {
-    outline-color: theme('colors.verdigris.DEFAULT');
+    outline-color: theme('colors.verdigris.bright');
     outline-offset: 2px;
   }
 
   ::selection {
-    background-color: theme('colors.verdigris.wash');
-    color: theme('colors.ink.DEFAULT');
+    background-color: rgba(91, 194, 170, 0.32);
+    color: theme('colors.white');
   }
 }
 
@@ -45,30 +59,196 @@
     font-feature-settings: 'ss01', 'zero';
   }
 
+  .eyebrow {
+    @apply font-mono text-xs uppercase text-ash;
+    letter-spacing: 0.14em;
+  }
+
+  /* ── Buttons ─────────────────────────────────────────────────────────── */
+
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-verdigris px-5 py-2.5
-           font-body text-sm font-medium text-white transition-colors duration-150
-           hover:bg-verdigris-dim active:bg-verdigris-dim disabled:cursor-not-allowed
-           disabled:bg-ash-light disabled:text-ash-dim;
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full
+           px-5 py-2.5 font-body text-sm font-medium text-void transition-all duration-300 ease-out
+           disabled:cursor-not-allowed disabled:opacity-50;
+    background-image: linear-gradient(180deg, #8af0d6 0%, #5bc2aa 55%, #3e8e7e 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(91, 194, 170, 0.5),
+      0 10px 30px -10px rgba(91, 194, 170, 0.7);
+  }
+
+  .btn-primary::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(138, 240, 214, 0.7),
+      0 14px 40px -8px rgba(91, 194, 170, 0.85);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:hover:not(:disabled)::after {
+    transform: translateX(120%);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-ash-light
-           bg-paper px-5 py-2.5 font-body text-sm font-medium text-ink transition-colors
-           duration-150 hover:border-ash hover:bg-parchment;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/10
+           bg-white/[0.04] px-5 py-2.5 font-body text-sm font-medium text-parchment
+           backdrop-blur-md transition-all duration-300 ease-out
+           hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.98];
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 font-body
+           text-sm text-ash-light transition-colors duration-200 hover:bg-white/[0.06] hover:text-white;
+  }
+
+  /* ── Inputs ──────────────────────────────────────────────────────────── */
+
   .field {
-    @apply w-full rounded-md border border-ash-light bg-white px-3 py-2.5 font-body text-base
-           text-ink placeholder:text-ash transition-colors duration-150
-           focus:border-verdigris focus:outline-none focus-visible:outline-2
-           focus-visible:outline-offset-2 focus-visible:outline-verdigris;
+    @apply w-full rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-3 font-body
+           text-base text-parchment placeholder:text-ash-dim transition-all duration-200
+           hover:border-white/15 focus:border-verdigris-bright/70 focus:bg-white/[0.05]
+           focus:outline-none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .field:focus {
+    box-shadow:
+      0 0 0 4px rgba(91, 194, 170, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   .chrome-button {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-ash-light
-           transition-colors duration-150 hover:bg-ink-edge hover:text-white
-           disabled:cursor-not-allowed disabled:text-ash-dim disabled:hover:bg-transparent;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-full text-ash-light
+           transition-all duration-200 hover:bg-white/[0.07] hover:text-white active:scale-90
+           disabled:cursor-not-allowed disabled:text-ash-dim disabled:opacity-60
+           disabled:hover:bg-transparent disabled:active:scale-100;
+  }
+
+  /* ── Surfaces ────────────────────────────────────────────────────────── */
+
+  .glass {
+    @apply border border-white/[0.07] bg-ink-raised/60 backdrop-blur-xl;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 20px 50px -24px rgba(0, 0, 0, 0.8);
+  }
+
+  .surface {
+    @apply rounded-xl border border-white/[0.06] bg-ink-raised/80;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .surface-inset {
+    @apply rounded-lg border border-white/[0.05] bg-black/25;
+  }
+
+  /* A small pill label used for statuses and counts. */
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-xs;
+  }
+
+  /* Gradient text: headline fills that read as light falling across type. */
+  .text-gradient {
+    background-image: linear-gradient(180deg, #ffffff 0%, #ece8e1 45%, #8a8f98 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-verdigris {
+    background-image: linear-gradient(100deg, #8af0d6 0%, #5bc2aa 40%, #d8a24a 110%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Card whose border catches a highlight under the cursor (set --x/--y). */
+  .spotlight {
+    @apply relative isolate overflow-hidden;
+  }
+
+  .spotlight::before {
+    content: '';
+    @apply pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-500;
+    background: radial-gradient(
+      420px circle at var(--x, 50%) var(--y, 50%),
+      rgba(91, 194, 170, 0.12),
+      transparent 60%
+    );
+  }
+
+  .spotlight:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Rotating conic border; the element needs a background of its own. */
+  .border-beam {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(theme('colors.ink.raised'), theme('colors.ink.raised')) padding-box,
+      conic-gradient(
+          from var(--border-angle),
+          rgba(255, 255, 255, 0.06) 0deg,
+          rgba(255, 255, 255, 0.06) 250deg,
+          #5bc2aa 300deg,
+          #8af0d6 330deg,
+          rgba(255, 255, 255, 0.06) 360deg
+        )
+        border-box;
+    animation: border-spin 6s linear infinite;
+  }
+}
+
+@layer utilities {
+  .grain::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0 z-[1] opacity-[0.07] mix-blend-overlay;
+    background-image: var(--grain);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  .mask-radial {
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+  }
+
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  }
+
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+    mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -78,6 +258,10 @@
  * every animated element therefore has a static end state, not a missing one.
  */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
@@ -88,17 +272,26 @@
   }
 }
 
-/* The privacy console scrolls; keep its scrollbar in-palette on the dark chrome. */
+/* Scrolling regions on the dark chrome keep their scrollbar in-palette. */
 .log-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #252a35 transparent;
+  scrollbar-color: #2a313d transparent;
 }
 
 .log-scroll::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .log-scroll::-webkit-scrollbar-thumb {
-  background-color: #252a35;
+  background-color: #2a313d;
   border-radius: 9999px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

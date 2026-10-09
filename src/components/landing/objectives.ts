@@ -6,7 +6,11 @@
 
 export type ObjectiveStatus = 'real' | 'partial' | 'simulated';
 
+export type ObjectiveId = 'tabs' | 'storage' | 'private' | 'cookies' | 'blocking' | 'analysis' | 'https';
+
 export type Objective = {
+  /** Stable key, so the landing page can pair each objective with its illustration. */
+  readonly id: ObjectiveId;
   readonly title: string;
   readonly status: ObjectiveStatus;
   readonly what: string;
@@ -22,6 +26,7 @@ export const STATUS_LABEL: Record<ObjectiveStatus, string> = {
 
 export const OBJECTIVES: readonly Objective[] = [
   {
+    id: 'tabs',
     title: 'Tabbed browsing with back, forward and reload',
     status: 'real',
     what:
@@ -30,12 +35,14 @@ export const OBJECTIVES: readonly Objective[] = [
       'Pages load in an iframe, so browsing is limited to a curated list of sites that allow being embedded.',
   },
   {
+    id: 'storage',
     title: 'History and bookmarks stored per account',
     status: 'real',
     what:
       'Every visit and saved page is written to a database against your account. Search, rename and delete them; they survive a refresh, a logout and a login on another device.',
   },
   {
+    id: 'private',
     title: 'Private mode',
     status: 'real',
     what:
@@ -44,6 +51,7 @@ export const OBJECTIVES: readonly Objective[] = [
       'It hides your browsing from this app’s database. It does not hide it from your network, your employer or the sites you visit.',
   },
   {
+    id: 'cookies',
     title: 'Cookie visibility',
     status: 'partial',
     what: 'You can see and clear the cookies MiniTor itself sets for your session.',
@@ -51,6 +59,7 @@ export const OBJECTIVES: readonly Objective[] = [
       'Third-party cookies set inside an embedded page are invisible to this one. Browsers isolate them from the parent by design, and no amount of JavaScript changes that.',
   },
   {
+    id: 'blocking',
     title: 'Tracker and ad-domain blocking',
     status: 'simulated',
     what:
@@ -59,6 +68,7 @@ export const OBJECTIVES: readonly Objective[] = [
       'On embedded third-party pages the log is a simulation — the parent page cannot see their network traffic. On MiniTor’s own demo page the blocking is genuinely enforced.',
   },
   {
+    id: 'analysis',
     title: 'Website privacy analysis',
     status: 'partial',
     what:
@@ -67,6 +77,7 @@ export const OBJECTIVES: readonly Objective[] = [
       'The scan is generated from a site profile, not measured live — a web page cannot inspect another site’s network traffic. Every report says so in its header. The scoring, classification and blocklist matching that produce it are real code, and the same rules the browser applies.',
   },
   {
+    id: 'https',
     title: 'HTTPS-only enforcement',
     status: 'real',
     what:

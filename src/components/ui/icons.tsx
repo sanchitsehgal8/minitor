@@ -161,3 +161,125 @@ export function ScanIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+export function ArrowUpRightIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path d="M5 11 11 5M6 5h5v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path d="m3.5 8.5 3 3 6-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function WarnIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M7.13 2.6a1 1 0 0 1 1.74 0l5.2 9.4a1 1 0 0 1-.87 1.5H2.8a1 1 0 0 1-.87-1.5l5.2-9.4Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M8 6.25v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="8" cy="11.25" r="0.85" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function EyeIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M1.75 8S4 3.75 8 3.75 14.25 8 14.25 8 12 12.25 8 12.25 1.75 8 1.75 8Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M6.3 4C6.84 3.84 7.4 3.75 8 3.75 12 3.75 14.25 8 14.25 8s-.6 1.13-1.75 2.3M4.1 5.2C2.6 6.35 1.75 8 1.75 8S4 12.25 8 12.25c1.2 0 2.27-.38 3.17-.95"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="m2.5 2.5 11 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function GlobeIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M2.5 8h11M8 2.25c1.5 1.6 2.25 3.5 2.25 5.75S9.5 12.15 8 13.75C6.5 12.15 5.75 10.25 5.75 8S6.5 3.85 8 2.25Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function LayersIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path d="M8 2 14 5 8 8 2 5l6-3Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="m2 8 6 3 6-3M2 11l6 3 6-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function CookieIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M13.7 8.6A5.75 5.75 0 1 1 7.4 2.3a2 2 0 0 0 2.35 2.35 2 2 0 0 0 1.6 2.35 2 2 0 0 0 2.35 1.6Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <circle cx="6" cy="7" r="0.85" fill="currentColor" />
+      <circle cx="9" cy="10.25" r="0.85" fill="currentColor" />
+      <circle cx="5.75" cy="10.5" r="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function LogOutIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M6.5 13.25H4a1.25 1.25 0 0 1-1.25-1.25V4A1.25 1.25 0 0 1 4 2.75h2.5M10.5 11l3-3-3-3M13.25 8H6.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function PanelIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <rect x="2.25" y="3" width="11.5" height="10" rx="1.75" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M10 3v10" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
